@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Je relève le défi — Phrases simples et complexes — 5e S5 J2</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --jour:#b94040;--jour-fonce:#7a1f1f;--jour-clair:#f7eded;--jour-pale:#f9c0bb;
+  --day-glow:rgba(185,64,64,.35);
+  --bg:#fffdf7;--dark:#1a0808;
+  --vert:#22c55e;--vert-bg:#e7faec;--vert-bd:#86efac;
+  --rouge:#ef4444;--rouge-bg:#fdeaea;--rouge-bd:#fca5a5;
+  --acier-clair:#f5f0f0;--acier-bord:#e0c8c8;
+  --txt:#2a0404;--gris:#8a6060;--sur:#fff;--bord:#e8d0d0;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--txt);font-family:'Nunito',Arial,sans-serif;min-height:100vh;padding:0 0 60px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes pop{0%{transform:scale(0);}60%{transform:scale(1.3);}100%{transform:scale(1);}}
+@keyframes flashPop{0%{opacity:1;transform:translate(-50%,-50%) scale(.3);}40%{opacity:1;transform:translate(-50%,-50%) scale(1.2);}100%{opacity:0;transform:translate(-50%,-60%) scale(1);}}
+@keyframes rainFall{0%{opacity:1;transform:translateY(-40px) rotate(0);}100%{opacity:0;transform:translateY(110vh) rotate(var(--rot));}}
+@keyframes rise{0%{transform:translateY(0);opacity:.5;}100%{transform:translateY(-46px);opacity:0;}}
+@keyframes flick{0%,100%{transform:scaleY(1) scaleX(1);}25%{transform:scaleY(1.15) scaleX(.92);}50%{transform:scaleY(.9) scaleX(1.08);}75%{transform:scaleY(1.06) scaleX(.96);}}
+@keyframes halo{0%,100%{opacity:.36;}50%{opacity:.6;}}
+@keyframes shk{10%,30%,50%,70%{transform:translateX(-3px);}20%,40%,60%,80%{transform:translateX(3px);}}
+@keyframes unlockPop{0%{transform:scale(.7);opacity:0;}60%{transform:scale(1.08);}100%{transform:scale(1);opacity:1;}}
+@keyframes slide{0%{background-position:0%}100%{background-position:300%}}
+@keyframes stpop{0%{transform:scale(0);}60%{transform:scale(1.3);}100%{transform:scale(1);}}
+@keyframes spin{to{transform:rotate(360deg);}}
+.bubble{position:fixed;border-radius:50%;filter:blur(2px);opacity:.3;z-index:0;pointer-events:none;}
+.b1{width:130px;height:130px;background:#f5c518;top:-32px;right:-28px;}
+.b2{width:96px;height:96px;background:var(--jour);bottom:26px;left:-24px;}
+.b3{width:72px;height:72px;background:#8dc63f;top:44%;right:-28px;}
+.b4{width:82px;height:82px;background:#f9c0bb;top:26%;left:-30px;}
+.flash-v{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.3);font-size:3rem;font-weight:900;z-index:9999;pointer-events:none;opacity:0;}
+.flash-v.pop{animation:flashPop 1s ease-out forwards;}
+.hdr{text-align:center;padding:12px 20px 10px;background:var(--bg);border-bottom:3px solid var(--jour);position:relative;z-index:1;}
+.logo-badge{display:inline-flex;align-items:center;gap:8px;background:#f5c518;border-radius:999px;padding:5px 15px;margin-bottom:7px;}
+.logo-badge .dots{display:flex;gap:4px;}.logo-badge .dots i{width:8px;height:8px;border-radius:50%;display:block;}
+.logo-badge .dots i:nth-child(1){background:#e05050;}.logo-badge .dots i:nth-child(2){background:#7a3d00;}.logo-badge .dots i:nth-child(3){background:#3d7a10;}
+.logo-badge .lab{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:800;color:#1a1200;letter-spacing:.5px;}
+.wk{font-size:.78rem;color:var(--gris);font-family:'Orbitron',sans-serif;letter-spacing:1px;margin-bottom:4px;}
+.hdr h1{font-family:'Orbitron',sans-serif;font-size:clamp(1rem,3.5vw,1.6rem);font-weight:900;color:var(--jour-fonce);margin-bottom:3px;}
+.hdr h1 .acc{color:var(--jour);}
+.theme-badge{display:inline-block;background:var(--jour);color:#fff;font-family:'Orbitron',sans-serif;font-weight:700;font-size:clamp(.62rem,2vw,.72rem);letter-spacing:1px;padding:6px 16px;border-radius:20px;box-shadow:0 4px 12px var(--day-glow);}
+.wrap{max-width:720px;margin:0 auto;padding:12px 14px;position:relative;z-index:1;}
+.ref-card{background:var(--sur);border:1px solid var(--bord);border-radius:12px;overflow:hidden;margin-bottom:12px;}
+.ref-btn{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;background:var(--jour-clair);border:none;width:100%;font-family:'Nunito',sans-serif;font-size:.88rem;font-weight:800;color:var(--jour-fonce);}
+.ref-arr{transition:transform .3s;}.ref-btn.open .ref-arr{transform:rotate(180deg);}
+.ref-body{max-height:0;overflow:hidden;transition:max-height .4s ease;}
+.ref-body.open{max-height:400px;}
+.ref-inner{padding:10px 14px;border-top:1px solid var(--bord);font-size:.84rem;line-height:1.85;}
+.ri{display:flex;gap:8px;margin-bottom:5px;align-items:baseline;}
+.rk{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--jour-fonce);min-width:140px;flex-shrink:0;}
+.texte-card{background:var(--sur);border:1px solid var(--bord);border-radius:12px;overflow:hidden;margin-bottom:12px;}
+.texte-hdr{background:var(--jour-fonce);color:#fff;padding:8px 14px;font-family:'Orbitron',sans-serif;font-size:.65rem;letter-spacing:1.5px;}
+.texte-body{padding:12px 14px;font-size:clamp(.88rem,2.2vw,.96rem);line-height:2;color:var(--txt);}
+.lab-wrap{background:#0c1820;border:1px solid #2a5a52;border-radius:14px;padding:8px;box-shadow:0 10px 30px rgba(0,0,0,.45);margin-bottom:12px;}
+#lab{width:100%;height:auto;display:block;}
+.bubble-svg{animation:rise 2.2s ease-in infinite;}
+.bubble-svg:nth-child(2){animation-delay:.6s;}.bubble-svg:nth-child(3){animation-delay:1.1s;}.bubble-svg:nth-child(4){animation-delay:1.6s;}
+.vialL{transition:opacity .4s ease;}
+.flame path{transform-box:fill-box;transform-origin:50% 100%;}
+.f-out{animation:flick .5s ease-in-out infinite;}.f-mid{animation:flick .42s ease-in-out infinite .08s;}.f-core{animation:flick .34s ease-in-out infinite .04s;}.f-base{animation:flick .62s ease-in-out infinite;}
+.halo-el{animation:halo 1.3s ease-in-out infinite;}
+#flask{transform-box:fill-box;transform-origin:center;}#flask.shake{animation:shk .5s ease;}
+#boom{opacity:0;}#boom.go{opacity:1;}
+.flash,.ring,.particle,.bang{transform-box:fill-box;transform-origin:center;opacity:0;}
+#boom.go .flash{animation:flashA 1.3s ease-out forwards;}@keyframes flashA{0%{opacity:0;transform:scale(.2);}25%{opacity:1;transform:scale(1.05);}100%{opacity:0;transform:scale(1.4);}}
+#boom.go .ring{animation:ringA 1.1s ease-out forwards;}@keyframes ringA{0%{opacity:.9;transform:scale(.2);}100%{opacity:0;transform:scale(1.8);}}
+#boom.go .particle{animation:partA 1s ease-out forwards;}@keyframes partA{0%{opacity:1;transform:translate(0,0) scale(1);}100%{opacity:0;transform:translate(var(--tx),var(--ty)) scale(.4);}}
+#boom.go .bang{animation:bangA 1.4s ease-out forwards;}@keyframes bangA{0%{opacity:0;transform:scale(.3);}30%{opacity:1;transform:scale(1.15);}80%{opacity:1;}100%{opacity:0;}}
+.hud{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+.score-box{font-family:'JetBrains Mono',monospace;font-size:clamp(.82rem,2.5vw,.95rem);background:#0c161d;border:1px solid #2a5a52;padding:7px 13px;border-radius:10px;color:#d7e6ea;}
+.score-box #score{color:#3fd07f;font-weight:700;}
+.prog-wrap{flex:1;min-width:120px;background:#1a2a35;border-radius:20px;height:8px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--jour-fonce),var(--jour));border-radius:20px;width:0%;transition:width .5s cubic-bezier(.34,1.3,.64,1);}
+.stars{display:flex;gap:3px;font-size:.88rem;}
+.str{opacity:.2;transition:all .4s;}.str.on{opacity:1;color:var(--jour);animation:stpop .5s;}
+.sound-btn{background:#0c161d;border:1px solid #2a5a52;color:#d7e6ea;font-size:1rem;width:38px;height:38px;border-radius:9px;cursor:pointer;flex-shrink:0;}
+.qcard{background:#0c161d;border:1px solid #2a5a52;border-radius:14px;padding:16px 18px 18px;margin-bottom:12px;animation:fadeUp .35s;}
+.qtarget{font-family:'JetBrains Mono',monospace;font-size:.75rem;color:#3fd07f;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;}
+.q-phrase{background:#122028;border:1px solid #2a5a52;border-radius:8px;padding:9px 12px;font-family:'Nunito',Arial,sans-serif;font-size:clamp(.9rem,2.5vw,1.02rem);font-style:italic;color:#c8e0ea;line-height:1.7;margin-bottom:12px;}
+.qtext{font-size:clamp(.92rem,2.5vw,1.05rem);font-weight:700;line-height:1.4;margin-bottom:14px;color:#d7e6ea;}
+.opts{display:flex;flex-direction:column;gap:8px;}
+.opt{background:#10212a;color:#d7e6ea;border:1px solid #2c5f56;border-radius:10px;padding:12px 15px;font-size:clamp(.88rem,2.3vw,.97rem);font-family:'Nunito',Arial,sans-serif;text-align:left;cursor:pointer;transition:transform .12s,background .2s,border-color .2s;min-height:44px;}
+.opt:hover:not(:disabled){background:#163039;transform:translateY(-2px);border-color:#3fd07f;}
+.opt:disabled{cursor:default;opacity:.85;}
+.opt.cok{background:#1f7a4d;border-color:#34d27f;color:#c0f0d8;font-weight:700;}
+.opt.cko{background:#7a2330;border-color:#e06a78;color:#ffb0b0;}
+.feedback{min-height:22px;margin-top:12px;font-weight:700;font-size:.95rem;}
+.feedback.ok{color:#5fe0a0;}.feedback.no{color:#ff9b9b;}
+.fb-detail{background:#122028;border-left:4px solid var(--rouge);border-radius:8px;padding:9px 12px;font-size:.84rem;color:#f0c0c0;line-height:1.7;margin-top:8px;font-weight:400;}
+.btn-retry{background:transparent;border:1px solid #e06a78;color:#ff9b9b;border-radius:7px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-top:7px;display:inline-block;}
+.btn-nxt{min-height:40px;background:var(--jour);color:#fff;border:none;border-radius:10px;padding:0 22px;font-weight:900;font-size:.78rem;cursor:pointer;font-family:'Orbitron',sans-serif;box-shadow:0 4px 0 var(--jour-fonce);margin-top:12px;display:none;}
+.btn-nxt.show{display:inline-flex;align-items:center;gap:6px;animation:pop .4s;}
+.unlock-card{display:none;background:linear-gradient(135deg,#0d2018,#102820);border:2px solid var(--vert);border-radius:14px;padding:18px;text-align:center;margin-bottom:12px;}
+.unlock-card.show{display:block;animation:unlockPop .5s ease;}
+.unlock-titre{font-family:'Orbitron',sans-serif;font-size:.88rem;font-weight:900;color:var(--vert);margin-bottom:5px;}
+.unlock-msg{font-size:.84rem;color:#7fe0a0;line-height:1.7;margin-bottom:12px;}
+.btn-unlock{min-height:40px;background:var(--vert);color:#fff;border:none;border-radius:10px;padding:0 22px;font-family:'Orbitron',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;}
+.etape2{display:none;}.etape2.show{display:block;animation:fadeUp .5s;}
+.e2-hdr{background:var(--jour-fonce);color:#fff;border-radius:12px 12px 0 0;padding:10px 14px;font-family:'Orbitron',sans-serif;font-size:.68rem;letter-spacing:1.5px;}
+.e2-body{background:var(--sur);border:1px solid var(--bord);border-top:none;border-radius:0 0 12px 12px;padding:15px;margin-bottom:12px;}
+.e2-consigne{font-size:.88rem;color:var(--gris);line-height:1.8;margin-bottom:13px;border-left:3px solid var(--jour);padding-left:10px;font-style:italic;}
+.e2-consigne strong{color:var(--jour-fonce);}
+textarea{width:100%;min-height:140px;border:1.5px solid var(--bord);border-radius:10px;padding:12px;font-family:'Nunito',Arial,sans-serif;font-size:clamp(.92rem,2.5vw,1rem);line-height:1.9;color:var(--txt);resize:vertical;outline:none;background:#fafaf5;}
+textarea:focus{border-color:var(--jour);box-shadow:0 0 0 3px var(--day-glow);}
+.grille{background:var(--acier-clair);border:1px solid var(--acier-bord);border-radius:10px;padding:11px 14px;margin-top:12px;}
+.grille-titre{font-family:'Orbitron',sans-serif;font-size:.6rem;letter-spacing:1.5px;color:var(--jour-fonce);margin-bottom:9px;}
+.grille-item{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid var(--acier-bord);cursor:pointer;font-size:.86rem;line-height:1.55;color:var(--txt);}
+.grille-item:last-child{border-bottom:none;}
+.grille-item input[type=checkbox]{width:18px;height:18px;flex-shrink:0;margin-top:2px;cursor:pointer;accent-color:var(--jour);}
+.grille-item.checked{color:var(--jour-fonce);font-weight:700;}
+.exemple{display:none;background:var(--jour-clair);border:1.5px solid var(--jour-pale);border-radius:10px;padding:13px;margin-top:10px;animation:fadeUp .4s;}
+.exemple.show{display:block;}
+.ex-titre{font-family:'Orbitron',sans-serif;font-size:.6rem;letter-spacing:1.5px;color:var(--jour-fonce);margin-bottom:7px;}
+.ex-texte{font-size:.88rem;font-style:italic;line-height:1.85;color:var(--txt);margin-bottom:9px;}
+.ex-analyse{font-size:.8rem;color:var(--gris);line-height:1.75;}
+.ex-analyse strong{color:var(--jour-fonce);}
+.btn-valider-e2{min-height:42px;background:var(--jour);color:#fff;border:none;border-radius:10px;padding:0 22px;font-weight:900;font-size:.8rem;cursor:pointer;font-family:'Orbitron',sans-serif;box-shadow:0 4px 0 var(--jour-fonce);margin-top:13px;display:inline-flex;align-items:center;gap:7px;}
+.btn-valider-e2:disabled{background:#aaa!important;cursor:not-allowed;box-shadow:none!important;}
+.ia-spinner-wrap{display:none;align-items:center;gap:10px;margin-top:10px;font-size:.84rem;color:var(--gris);font-style:italic;}
+.ia-spinner-wrap.show{display:flex;}
+.ia-spinner{width:18px;height:18px;border:3px solid var(--bord);border-top-color:var(--jour);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;}
+.ia-result{display:none;background:#0c161d;border:1.5px solid #2a5a52;border-radius:12px;padding:16px;margin-top:12px;font-size:.88rem;line-height:1.85;color:#d7e6ea;font-family:'Nunito',Arial,sans-serif;white-space:pre-wrap;text-align:left;}
+.ia-result.show{display:block;animation:fadeUp .4s;}
+.ia-result strong{color:#ffd23d;}
+.bilan{display:none;background:var(--sur);border:2px solid var(--jour);border-radius:14px;padding:20px;text-align:center;margin-top:10px;}
+.bilan.show{display:block;animation:fadeUp .5s;}
+.bil-rainbow{height:4px;background:linear-gradient(90deg,var(--jour-fonce),var(--jour),var(--jour-pale),var(--jour-fonce));background-size:300%;animation:slide 4s linear infinite;border-radius:4px;margin-bottom:13px;}
+.bil-score{font-family:'JetBrains Mono',monospace;font-size:1.7rem;font-weight:700;color:var(--jour-fonce);margin-bottom:4px;}
+.bil-titre{font-family:'Orbitron',sans-serif;font-size:.84rem;color:var(--jour);margin-bottom:6px;}
+.bil-msg{font-size:.84rem;color:var(--gris);line-height:1.7;max-width:400px;margin:0 auto 13px;}
+.btn-retry-g{background:var(--jour);color:#fff;border:none;border-radius:10px;padding:9px 22px;font-weight:800;font-size:.84rem;cursor:pointer;font-family:'Orbitron',sans-serif;}
+</style>
+</head>
+<body>
+<div class="bubble b1"></div><div class="bubble b2"></div><div class="bubble b3"></div><div class="bubble b4"></div>
+<div class="flash-v" id="flashV"></div>
+<div class="hdr">
+  <div class="logo-badge"><span class="dots"><i></i><i></i><i></i></span><span class="lab">PAZAPA · FRANÇAIS · 5ÈME</span></div>
+  <div class="wk">Semaine 5 — Jour 2</div>
+  <h1>Je relève le <span class="acc">Défi</span></h1>
+  <div class="theme-badge">Phrases simples &amp; complexes · 2 étapes</div>
+</div>
+<div class="wrap">
+  <div class="ref-card">
+    <button class="ref-btn" id="btnRef">⚗️ Référentiel — Phrases simples et complexes <span class="ref-arr">▾</span></button>
+    <div class="ref-body" id="bodyRef">
+      <div class="ref-inner">
+        <div class="ri"><span class="rk">Phrase simple</span><span>Un seul verbe conjugué. Elle forme une seule proposition.</span></div>
+        <div class="ri"><span class="rk">Phrase complexe</span><span>Au moins deux verbes conjugués. Elle forme plusieurs propositions.</span></div>
+        <div class="ri"><span class="rk">Phrase non verbale</span><span>Aucun verbe conjugué. Fréquente sur les panneaux, titres, descriptions brèves.</span></div>
+        <div class="ri"><span class="rk">Test</span><span>Compte les verbes conjugués (ni infinitif, ni participe seul) → 0 : non verbale · 1 : simple · 2+ : complexe.</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="texte-card">
+    <div class="texte-hdr">TEXTE DU DÉFI — à analyser</div>
+    <div class="texte-body">« La maison de pierre se dressait au bout du chemin. Silence complet autour d'elle. Quand le vent soufflait, les volets grinçaient doucement contre les murs anciens. À l'intérieur, on trouvait de vieux meubles sombres et chacun se demandait qui avait bien pu vivre ici autrefois. Personne ne s'aventurait trop près, car des histoires étranges circulaient dans le village depuis longtemps. Sur la porte d'entrée, une pancarte fixée par le dernier propriétaire indiquait simplement : « Entrée interdite. » Pourtant, certains enfants curieux s'approchaient parfois en cachette, espérant apercevoir quelque chose par les fenêtres poussiéreuses. »</div>
+  </div>
+  <div class="lab-wrap"><svg id="lab" viewBox="0 0 480 470" xmlns="http://www.w3.org/2000/svg"></svg></div>
+  <div class="hud">
+    <div class="score-box">⚗️ Réactifs : <span id="score">0</span> / <span id="total">6</span></div>
+    <div class="prog-wrap"><div class="prog-fill" id="progFill"></div></div>
+    <div class="stars" id="starsRow"></div>
+    <button id="soundBtn" class="sound-btn">🔊</button>
+  </div>
+  <!-- ÉTAPE 1 -->
+  <div id="zone1">
+    <div class="qcard" id="qcard">
+      <div class="qtarget" id="qtarget">Réactif 1 / 6</div>
+      <div class="q-phrase" id="qphrase"></div>
+      <div class="qtext" id="qtext"></div>
+      <div class="opts" id="opts"></div>
+      <div class="feedback" id="feedback"></div>
+      <div id="fbDetail" style="display:none;" class="fb-detail"></div>
+      <button class="btn-retry" id="btnRetry" style="display:none;" onclick="retryQ()">Réessayer</button>
+      <button class="btn-nxt" id="btnNxt" onclick="nextQ()">Réactif suivant ▸</button>
+    </div>
+    <div class="unlock-card" id="unlockCard">
+      <div class="unlock-titre">🔓 Étape 2 débloquée !</div>
+      <div class="unlock-msg">Tu as réussi l'analyse. L'atelier de production s'ouvre.<br>À toi de construire ton propre texte.</div>
+      <button class="btn-unlock" onclick="showEtape2()">Passer à l'étape 2 ▸</button>
+    </div>
+    <div class="bilan" id="bilan1">
+      <div class="bil-rainbow"></div>
+      <div class="bil-score" id="bil1Score"></div>
+      <div class="bil-titre" id="bil1Titre"></div>
+      <div class="bil-msg" id="bil1Msg"></div>
+      <button class="btn-retry-g" onclick="restart()">Recommencer</button>
+    </div>
+  </div>
+  <!-- ÉTAPE 2 -->
+  <div class="etape2" id="zone2">
+    <div class="e2-hdr">✏️ ÉTAPE 2 — Production écrite guidée</div>
+    <div class="e2-body">
+      <p class="e2-consigne">Décris un lieu de ton choix (une maison abandonnée, un jardin, une salle de classe, un grenier…) en variant phrases simples et phrases complexes.<br><br>Ton texte doit contenir :<br>— <strong>au moins deux phrases simples</strong> ;<br>— <strong>au moins deux phrases complexes</strong> ;<br>— éventuellement une <strong>phrase non verbale</strong>.</p>
+      <textarea id="redaction" placeholder="Écris ton texte ici…" spellcheck="true"></textarea>
+      <div class="grille">
+        <div class="grille-titre">GRILLE D'AUTO-ÉVALUATION</div>
+        <label class="grille-item" id="gi0"><input type="checkbox" id="cb0"> Mon texte contient au moins deux phrases simples (1 verbe conjugué chacune).</label>
+        <label class="grille-item" id="gi1"><input type="checkbox" id="cb1"> Mon texte contient au moins deux phrases complexes (2 verbes conjugués ou plus chacune).</label>
+        <label class="grille-item" id="gi2"><input type="checkbox" id="cb2"> J'ai vérifié le nombre de verbes conjugués dans chaque phrase pour m'assurer de sa nature.</label>
+        <label class="grille-item" id="gi3"><input type="checkbox" id="cb3"> Mon texte respecte la ponctuation et les majuscules.</label>
+        <label class="grille-item" id="gi4"><input type="checkbox" id="cb4"> Mon texte ne contient pas de propos contraire aux valeurs islamiques.</label>
+      </div>
+      <button class="btn-valider-e2" id="btnValider" onclick="validerEtape2()">✓ Valider ma production</button>
+      <div class="ia-spinner-wrap" id="iaSpinner"><div class="ia-spinner"></div><span>Correction en cours…</span></div>
+    </div>
+    <div class="bilan" id="bilan2">
+      <div class="bil-rainbow"></div>
+      <div class="bil-score" id="bil2Score"></div>
+      <div class="bil-titre" id="bil2Titre"></div>
+      <div class="bil-msg" id="bil2Msg"></div>
+      <div class="ia-result" id="iaResult"></div>
+      <div class="exemple" id="exempleBloc" style="text-align:left;margin-top:12px;">
+        <div class="ex-titre">EXEMPLE DE PRODUCTION</div>
+        <div class="ex-texte">« Le grenier sentait la poussière et le bois ancien. Silence absolu. Une lucarne laissait entrer un mince filet de lumière, et des ombres se déplaçaient doucement sur les murs. Quelques cartons oubliés s'empilaient dans un coin. Lorsqu'on montait l'escalier en bois, chaque marche craquait sous les pas, comme si la maison elle-même racontait son histoire. »</div>
+        <div class="ex-analyse"><strong>Phrases simples :</strong> « Le grenier sentait la poussière et le bois ancien. » · « Quelques cartons oubliés s'empilaient dans un coin. »<br><strong>Phrase non verbale :</strong> « Silence absolu. »<br><strong>Phrases complexes :</strong> « Une lucarne laissait entrer un mince filet de lumière, et des ombres se déplaçaient doucement sur les murs. » (2 verbes conjugués) · « Lorsqu'on montait l'escalier en bois, chaque marche craquait sous les pas, comme si la maison elle-même racontait son histoire. » (3 verbes conjugués)</div>
+      </div>
+      <button class="btn-retry-g" onclick="restart()">Recommencer</button>
+    </div>
+  </div>
+</div>
+<script>
+const QS=[
+  {phrase:"« La maison de pierre se dressait au bout du chemin. »",q:"Quelle est la nature de cette phrase ?",opts:["Phrase simple","Phrase complexe","Phrase non verbale"],ok:0,fb:"Un seul verbe conjugué est présent : se dressait. Au bout du chemin est un complément circonstanciel de lieu, pas une proposition supplémentaire. → phrase simple."},
+  {phrase:"« Silence complet autour d'elle. »",q:"Quelle est la nature de cette phrase ?",opts:["Phrase simple","Phrase complexe","Phrase non verbale"],ok:2,fb:"Cette phrase ne contient aucun verbe conjugué. C'est une phrase non verbale, utilisée ici pour créer un effet de description brève et saisissante."},
+  {phrase:"« Quand le vent soufflait, les volets grinçaient doucement contre les murs anciens. »",q:"Quelle est la nature de cette phrase ?",opts:["Phrase simple","Phrase complexe","Phrase non verbale"],ok:1,fb:"Deux verbes conjugués sont présents : soufflait et grinçaient. La proposition introduite par quand est subordonnée à la proposition principale. → phrase complexe."},
+  {phrase:"« À l'intérieur, on trouvait de vieux meubles sombres et chacun se demandait qui avait bien pu vivre ici autrefois. »",q:"Quelle est la nature de cette phrase ?",opts:["Phrase simple","Phrase complexe","Phrase non verbale"],ok:1,fb:"Trois verbes conjugués sont présents : trouvait, se demandait et avait pu (forme verbale composée). Vivre est à l'infinitif, il ne compte pas. Trois propositions reliées → phrase complexe."},
+  {phrase:"« Personne ne s'aventurait trop près, car des histoires étranges circulaient dans le village depuis longtemps. »",q:"Quelle est la nature de cette phrase ?",opts:["Phrase simple","Phrase complexe","Phrase non verbale"],ok:1,fb:"Deux verbes conjugués sont présents : s'aventurait et circulaient. La proposition introduite par car exprime la cause de la première proposition. → phrase complexe."},
+  {phrase:"« Entrée interdite. »",q:"Quelle est la nature de cette phrase ?",opts:["Phrase simple","Phrase complexe","Phrase non verbale"],ok:2,fb:"Cette phrase, inscrite sur la pancarte, ne contient aucun verbe conjugué. C'est une phrase non verbale, fréquente sur les panneaux et les écriteaux."}
+];
+const N=QS.length,SEUIL=5;
+const PAL=["#b94040","#d97706","#2563eb","#7c3aed","#0891b2","#b91c1c"];
+const FLASK='M222,200 L258,200 L334,372 Q334,390 314,390 L166,390 Q146,390 146,372 Z';
+let opened=0,busy=false,cur=0,errCount=0;
+let st=QS.map(()=>({tried:false,ok:false,picked:undefined}));
+let perms=[];
+let actx=null,son=true,simSrc=null,simGain=null,bubbleOn=false,bubbleTO=null;
+
+function mkPerm(n){const p=Array.from({length:n},(_,i)=>i);for(let i=p.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[p[i],p[j]]=[p[j],p[i]];}return p;}
+function initPerms(){perms=QS.map(q=>mkPerm(q.opts.length));}
+
+function decor(){
+  let s='';
+  s+='<rect width="480" height="470" fill="url(#wall)"/>';
+  for(let y=60;y<420;y+=46)s+=`<line x1="0" y1="${y}" x2="480" y2="${y}" stroke="#ffffff" stroke-opacity="0.035"/>`;
+  for(let x=0;x<480;x+=60)s+=`<line x1="${x}" y1="40" x2="${x}" y2="420" stroke="#ffffff" stroke-opacity="0.03"/>`;
+  s+='<rect x="0" y="16" width="480" height="9" rx="4" fill="#36474f"/><rect x="0" y="17" width="480" height="3" rx="1.5" fill="#4a5d66" opacity="0.6"/>';
+  s+='<rect x="90" y="14" width="12" height="14" rx="2" fill="#2a3940"/><rect x="300" y="14" width="12" height="14" rx="2" fill="#2a3940"/>';
+  s+='<rect x="312" y="44" width="132" height="84" rx="4" fill="url(#win)" stroke="#3a4a52" stroke-width="4"/>';
+  s+='<line x1="378" y1="44" x2="378" y2="128" stroke="#3a4a52" stroke-width="4"/><line x1="312" y1="86" x2="444" y2="86" stroke="#3a4a52" stroke-width="4"/>';
+  s+='<rect x="300" y="158" width="160" height="7" rx="2" fill="#2c3c44"/>';
+  [["#b94040",316],["#d97706",338],["#2563eb",360],["#7c3aed",382],["#0891b2",404],["#b91c1c",426]].forEach(b=>{s+=`<rect x="${b[1]-7}" y="132" width="14" height="26" rx="3" fill="${b[0]}" opacity="0.85"/><rect x="${b[1]-3}" y="126" width="6" height="7" fill="#cfe6f0" opacity="0.5"/>`;});
+  s+='<rect x="22" y="150" width="104" height="92" rx="3" fill="#122028" stroke="#3a4a52" stroke-width="2"/>';
+  s+='<rect x="22" y="150" width="104" height="14" fill="#1f3a42"/><text x="74" y="160" text-anchor="middle" font-family="Consolas,monospace" font-size="7" fill="#7fd0c4">ELEMENTS</text>';
+  const cc=["#2a5a52","#3a4a6a","#5a4a2a","#4a2a4a"];
+  for(let r=0;r<5;r++)for(let c=0;c<9;c++)s+=`<rect x="${27+c*11}" y="${168+r*13}" width="9" height="11" rx="1" fill="${cc[(r*9+c)%4]}" opacity="0.6"/>`;
+  s+='<line x1="240" y1="0" x2="240" y2="30" stroke="#3a4a52" stroke-width="3"/><path d="M222,30 h36 l-6,16 h-24 Z" fill="#46585f"/>';
+  s+='<ellipse cx="240" cy="210" rx="150" ry="180" fill="url(#lamp)"/>';
+  s+='<rect x="0" y="418" width="480" height="52" fill="#26363e"/><rect x="0" y="418" width="480" height="6" fill="#34474f"/>';
+  s+='<rect x="0" y="430" width="480" height="40" fill="#1b2a31"/>';
+  [60,260].forEach(dx=>{s+=`<rect x="${dx}" y="436" width="150" height="30" rx="3" fill="#22333a" stroke="#2e424a" stroke-width="1"/><circle cx="${dx+135}" cy="451" r="3" fill="#46585f"/>`;});
+  return s;
+}
+function buildLab(){
+  let s='<defs>'
+    +'<clipPath id="fc"><path d="'+FLASK+'"/><rect x="216" y="126" width="48" height="76"/></clipPath>'
+    +'<linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a2c34"/><stop offset="1" stop-color="#0e1b22"/></linearGradient>'
+    +'<radialGradient id="lamp"><stop offset="0" stop-color="#fff6d8" stop-opacity="0.14"/><stop offset="1" stop-color="#fff6d8" stop-opacity="0"/></radialGradient>'
+    +'<radialGradient id="win"><stop offset="0" stop-color="#2c5a66"/><stop offset="1" stop-color="#16323a"/></radialGradient>'
+    +'<radialGradient id="fg"><stop offset="0" stop-color="#ffd23d" stop-opacity="0.55"/><stop offset="1" stop-color="#ffd23d" stop-opacity="0"/></radialGradient>'
+    +'<radialGradient id="flashg"><stop offset="0" stop-color="#fff7d0"/><stop offset="0.5" stop-color="#ffd23d" stop-opacity="0.9"/><stop offset="1" stop-color="#f0561e" stop-opacity="0"/></radialGradient>'
+    +'</defs>';
+  s+=decor();
+  const rackW=Math.max(150,N*22+20);
+  s+=`<rect x="40" y="92" width="${rackW}" height="12" rx="3" fill="#3a4a58"/>`;
+  for(let i=0;i<N;i++){const tx=54+i*22;s+=`<rect x="${tx-7}" y="56" width="14" height="44" rx="6" fill="#cfe6f0" fill-opacity="0.22" stroke="#9fc0d2" stroke-width="1.2"/><rect class="vialL" id="vialL${i}" x="${tx-5}" y="74" width="10" height="24" rx="4" fill="${PAL[i%PAL.length]}"/>`;}
+  s+='<rect x="120" y="388" width="240" height="8" rx="3" fill="#7f8c9a"/>';
+  s+='<rect x="232" y="424" width="16" height="22" fill="#5a6772"/><rect x="226" y="444" width="28" height="8" rx="2" fill="#46555e"/>';
+  s+='<g id="flask"><g id="liquidg" clip-path="url(#fc)" style="opacity:0"><rect id="liquid" x="140" y="388" width="200" height="2" fill="#b94040"/><ellipse id="surface" cx="240" cy="388" rx="100" ry="6" fill="#ffffff" opacity="0.25"/><circle class="bubble-svg" cx="220" cy="360" r="4" fill="#fff" opacity="0.5"/><circle class="bubble-svg" cx="255" cy="350" r="3.5" fill="#fff" opacity="0.5"/><circle class="bubble-svg" cx="235" cy="368" r="3" fill="#fff" opacity="0.5"/><circle class="bubble-svg" cx="262" cy="362" r="4" fill="#fff" opacity="0.5"/></g>';
+  s+=`<path d="${FLASK}" fill="#cfe6f0" fill-opacity="0.16" stroke="#a9c6d6" stroke-width="3"/>`;
+  s+='<rect x="216" y="126" width="48" height="76" rx="4" fill="#cfe6f0" fill-opacity="0.16" stroke="#a9c6d6" stroke-width="3"/><rect x="210" y="120" width="60" height="9" rx="4" fill="#a9c6d6"/></g>';
+  s+='<g class="flame"><ellipse class="halo-el" cx="240" cy="404" rx="42" ry="52" fill="url(#fg)"/><path class="f-out" d="M229,420 C221,406 230,394 240,384 C250,394 259,406 251,420 Z" fill="#f0922e"/><path class="f-mid" d="M232,420 C227,408 234,398 240,390 C246,398 253,408 248,420 Z" fill="#ffd23d"/><path class="f-core" d="M236,420 C233,410 238,402 240,396 C242,402 247,410 244,420 Z" fill="#fff3c0"/><path class="f-base" d="M234,421 C232,414 234,410 240,410 C246,410 248,414 246,421 Z" fill="#7fb8ec"/></g>';
+  s+='<g id="boom"><circle class="flash" cx="240" cy="250" r="150" fill="url(#flashg)"/><circle class="ring" cx="240" cy="250" r="110" fill="none" stroke="#ffd23d" stroke-width="6"/>';
+  const cols=['#ffd23d','#f0922e','#e0414e','#fff0a0'];
+  for(let i=0;i<18;i++){const a=Math.random()*6.28,d=80+Math.random()*80;s+=`<circle class="particle" cx="240" cy="250" r="${4+Math.floor(Math.random()*5)}" fill="${cols[i%4]}" style="--tx:${(Math.cos(a)*d).toFixed(0)}px;--ty:${(Math.sin(a)*d).toFixed(0)}px"/>`;}
+  s+='<text class="bang" x="240" y="272" text-anchor="middle" font-size="64">💥</text></g>';
+  document.getElementById('lab').innerHTML=s;
+}
+function renderState(){
+  for(let i=0;i<N;i++){const v=document.getElementById('vialL'+i);if(v)v.style.opacity=opened>i?'0':'1';}
+  const lg=document.getElementById('liquidg');
+  if(opened>0){const frac=opened/N,ytop=388-frac*250;const liq=document.getElementById('liquid');liq.setAttribute('y',ytop.toFixed(1));liq.setAttribute('height',(388-ytop).toFixed(1));liq.setAttribute('fill',PAL[(opened-1)%PAL.length]);const su=document.getElementById('surface');if(su)su.setAttribute('cy',ytop.toFixed(1));lg.style.opacity='1';}
+  else lg.style.opacity='0';
+  const boomOn=opened>=N;document.getElementById('boom').classList.toggle('go',boomOn);document.getElementById('flask').classList.toggle('shake',boomOn);
+  document.getElementById('score').textContent=opened;document.getElementById('total').textContent=N;
+  document.getElementById('progFill').style.width=(opened/N*100)+'%';
+  document.querySelectorAll('.str').forEach((s,i)=>s.classList.toggle('on',i<opened));
+}
+function loadQ(){
+  if(cur>=N)return;busy=false;
+  const q=QS[cur],perm=perms[cur],s=st[cur];
+  document.getElementById('qtarget').textContent='Réactif '+(cur+1)+' / '+N;
+  document.getElementById('qphrase').textContent=q.phrase;
+  document.getElementById('qtext').textContent=q.q;
+  const LETTRES=['A','B','C'];
+  const optsEl=document.getElementById('opts');optsEl.innerHTML='';
+  perm.forEach((oi,li)=>{
+    const b=document.createElement('button');b.className='opt';b.textContent=LETTRES[li]+'. '+q.opts[oi];
+    if(s.tried){b.disabled=true;if(oi===q.ok)b.classList.add('cok');if(oi===s.picked&&oi!==q.ok)b.classList.add('cko');}
+    else b.addEventListener('click',()=>answer(oi,b));
+    optsEl.appendChild(b);
+  });
+  const fb=document.getElementById('feedback'),fbd=document.getElementById('fbDetail'),btnR=document.getElementById('btnRetry'),btnN=document.getElementById('btnNxt');
+  if(s.tried&&s.ok){fb.textContent='✅ Réactif ajouté !';fb.className='feedback ok';fbd.style.display='none';btnR.style.display='none';btnN.textContent=cur<N-1?'Réactif suivant ▸':'Voir les résultats ▸';btnN.classList.add('show');}
+  else if(s.tried&&!s.ok){fb.textContent='❌ Mauvais dosage.';fb.className='feedback no';fbd.textContent=q.fb;fbd.style.display='block';btnR.style.display='inline-block';btnN.classList.remove('show');}
+  else{fb.textContent='';fb.className='feedback';fbd.style.display='none';btnR.style.display='none';btnN.classList.remove('show');}
+}
+function answer(oi,btn){
+  if(busy)return;const q=QS[cur],s=st[cur];if(s.tried)return;
+  s.tried=true;s.picked=oi;document.querySelectorAll('.opt').forEach(b=>b.disabled=true);
+  if(oi===q.ok){busy=true;s.ok=true;opened++;renderState();pour();flashV(true);btn.classList.add('cok');document.getElementById('feedback').textContent='✅ Réactif ajouté !';document.getElementById('feedback').className='feedback ok';document.getElementById('fbDetail').style.display='none';document.getElementById('btnRetry').style.display='none';const btnN=document.getElementById('btnNxt');btnN.textContent=cur<N-1?'Réactif suivant ▸':'Voir les résultats ▸';btnN.classList.add('show');if(opened>=N){kaboom();setTimeout(finirEtape1,1800);}}
+  else{errCount++;deny();flashV(false);btn.classList.add('cko');document.getElementById('feedback').textContent='❌ Mauvais dosage.';document.getElementById('feedback').className='feedback no';document.getElementById('fbDetail').textContent=q.fb;document.getElementById('fbDetail').style.display='block';document.getElementById('btnRetry').style.display='inline-block';}
+}
+function retryQ(){st[cur].tried=false;st[cur].ok=false;st[cur].picked=undefined;perms[cur]=mkPerm(QS[cur].opts.length);loadQ();}
+function nextQ(){if(cur<N-1){cur++;loadQ();}else finirEtape1();}
+function finirEtape1(){
+  document.getElementById('qcard').style.display='none';
+  if(opened>=SEUIL){document.getElementById('unlockCard').classList.add('show');unlockS();}
+  else showBilan1();
+}
+function showBilan1(){
+  const k=opened>=6?6:opened>=5?5:opened>=4?4:0;
+  const msgs={6:{t:'Réaction explosive réussie !',m:'Tu identifies parfaitement les trois types de phrases.'},5:{t:'Très bonne analyse.',m:"Vérifie bien ta grille d'auto-évaluation à l'étape 2."},4:{t:'Bonne tentative.',m:'Reprends le texte du défi et les ateliers précédents avant de retenter.'},0:{t:'Reprends le texte du défi et les ateliers précédents avant de retenter.',m:''}};
+  const m=msgs[k];
+  document.getElementById('bil1Score').textContent=opened+' / 6 pts';
+  document.getElementById('bil1Titre').textContent=m.t;document.getElementById('bil1Msg').textContent=m.m;
+  document.getElementById('bilan1').classList.add('show');
+  if(opened<4)finalKoS();else finalOkS();
+}
+function showEtape2(){document.getElementById('zone1').style.display='none';document.getElementById('zone2').classList.add('show');window.scrollTo({top:0,behavior:'smooth'});}
+
+
+/* ── VALIDER ÉTAPE 2 — un seul bouton, IA en fallback silencieux ── */
+async function validerEtape2(){
+  const texte=document.getElementById('redaction').value.trim();
+  const nb=[0,1,2,3,4].filter(i=>document.getElementById('cb'+i).checked).length;
+  const btn=document.getElementById('btnValider');
+  if(texte.length<20){afficherBilan2(nb,false);return;}
+  // Tenter correction IA
+  btn.disabled=true;btn.textContent='…';
+  document.getElementById('iaSpinner').classList.add('show');
+  let correctionIA=null;
+  try{
+    const resp=await fetch('/.netlify/functions/corriger2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({texte}),signal:AbortSignal.timeout(12000)});
+    if(resp.ok){const data=await resp.json();if(data.correction)correctionIA=data.correction;}
+  }catch(e){/* fallback silencieux */}
+  document.getElementById('iaSpinner').classList.remove('show');
+  btn.disabled=false;btn.innerHTML='✓ Valider ma production';
+  afficherBilan2(nb,correctionIA);
+}
+
+function afficherBilan2(nb,correctionIA){
+  const texte=document.getElementById('redaction').value.trim();
+  let titre,msg;
+  if(texte.length<20){titre='Ton texte est trop court.';msg='Rédige au moins 5 lignes en variant phrases simples et phrases complexes.';beepErr();}
+  else if(nb===5){titre='Architecte des phrases certifié !';msg='Tu identifies parfaitement les phrases simples et complexes, et tu sais les réinvestir dans ta propre écriture.';finalOkS();rainEmojis();}
+  else if(nb>=3){titre='Très bonne production.';msg="Vérifie les cases non cochées dans ta grille d'auto-évaluation.";beepOk();}
+  else{titre='Production à compléter.';msg="Relis la consigne et la grille d'auto-évaluation avant de finaliser ton texte.";beepErr();}
+  document.getElementById('bil2Score').textContent=nb+' / 5 critères cochés';
+  document.getElementById('bil2Titre').textContent=titre;
+  document.getElementById('bil2Msg').textContent=msg;
+  // Correction IA si disponible
+  const iaDiv=document.getElementById('iaResult');
+  if(correctionIA&&iaDiv){
+    const html=correctionIA.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/&lt;strong&gt;/g,'<strong>').replace(/&lt;\/strong&gt;/g,'</strong>');
+    iaDiv.innerHTML=html;iaDiv.classList.add('show');
+  }
+  document.getElementById('bilan2').classList.add('show');
+  document.getElementById('exempleBloc').classList.add('show');
+}
+
+function restart(){
+  opened=0;busy=false;cur=0;errCount=0;
+  st=QS.map(()=>({tried:false,ok:false,picked:undefined}));initPerms();
+  ['unlockCard','bilan1','bilan2'].forEach(id=>document.getElementById(id).classList.remove('show'));
+  document.getElementById('zone1').style.display='';document.getElementById('qcard').style.display='';
+  document.getElementById('zone2').classList.remove('show');
+  document.getElementById('redaction').value='';
+  document.getElementById('exempleBloc').classList.remove('show');
+  [0,1,2,3,4].forEach(i=>{document.getElementById('cb'+i).checked=false;document.getElementById('gi'+i).classList.remove('checked');});
+  const ir=document.getElementById('iaResult');if(ir){ir.classList.remove('show');ir.innerHTML='';}
+  document.getElementById('exempleBloc').classList.remove('show');
+  renderState();loadQ();window.scrollTo({top:0,behavior:'smooth'});
+}
+function flashV(ok){const el=document.getElementById('flashV');el.textContent=ok?'✓':'✗';el.style.color=ok?'#22c55e':'#ef4444';el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');}
+function buildStars(){const w=document.getElementById('starsRow');w.innerHTML='';for(let i=0;i<N;i++){const s=document.createElement('span');s.className='str';s.textContent='★';w.appendChild(s);}}
+const RAIN=['⭐','✨','📝','🏆','📖','🔬','✏️','🌟'];
+function rainEmojis(){for(let i=0;i<25;i++){setTimeout(()=>{const el=document.createElement('div');el.textContent=RAIN[Math.floor(Math.random()*RAIN.length)];el.style.cssText='position:fixed;top:-40px;left:'+(Math.random()*100)+'vw;font-size:'+(1+Math.random()*1.3).toFixed(2)+'rem;z-index:9998;pointer-events:none;--rot:'+(Math.random()*60-30)+'deg;animation:rainFall '+(1.8+Math.random()*1.4).toFixed(2)+'s ease-in forwards;';document.body.appendChild(el);setTimeout(()=>el.remove(),3500);},i*85);}}
+function initA(){if(actx)return;try{actx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}startBubbles();}
+function oneBubble(){if(!actx||!son)return;const t=actx.currentTime;const o=actx.createOscillator(),g=actx.createGain(),lp=actx.createBiquadFilter();o.type='sine';lp.type='lowpass';lp.frequency.value=1200;const f0=130+Math.random()*170;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f0*(2.3+Math.random()*1.6),t+0.05+Math.random()*0.05);g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(0.05+Math.random()*0.04,t+0.008);g.gain.exponentialRampToValueAtTime(0.0004,t+0.13);o.connect(lp);lp.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+0.15);}
+function startSimmer(){if(!actx||!son||simSrc)return;const sr=actx.sampleRate;const buf=actx.createBuffer(1,Math.floor(sr*2),sr),d=buf.getChannelData(0);let last=0;for(let i=0;i<d.length;i++){const w=Math.random()*2-1;last=(last+0.02*w)/1.02;d[i]=last*3.2;}simSrc=actx.createBufferSource();simSrc.buffer=buf;simSrc.loop=true;const hp=actx.createBiquadFilter();hp.type='highpass';hp.frequency.value=130;const lp2=actx.createBiquadFilter();lp2.type='lowpass';lp2.frequency.value=720;simGain=actx.createGain();simGain.gain.value=0.0001;simSrc.connect(hp);hp.connect(lp2);lp2.connect(simGain);simGain.connect(actx.destination);simSrc.start();simGain.gain.linearRampToValueAtTime(0.03,actx.currentTime+0.6);}
+function stopSimmer(){if(simGain)simGain.gain.setTargetAtTime(0.0001,actx.currentTime,0.12);if(simSrc){try{simSrc.stop(actx.currentTime+0.5);}catch(e){}simSrc=null;simGain=null;}}
+function bubbleLoop(){if(!bubbleOn)return;oneBubble();if(Math.random()<0.25)setTimeout(oneBubble,40+Math.random()*80);bubbleTO=setTimeout(bubbleLoop,160+Math.random()*260);}
+function startBubbles(){if(!actx||!son)return;startSimmer();if(bubbleOn)return;bubbleOn=true;bubbleLoop();}
+function stopBubbles(){bubbleOn=false;if(bubbleTO){clearTimeout(bubbleTO);bubbleTO=null;}stopSimmer();}
+function pour(){initA();if(!actx||!son)return;const t=actx.currentTime,o=actx.createOscillator(),g=actx.createGain();o.type='sine';o.frequency.setValueAtTime(300,t);o.frequency.exponentialRampToValueAtTime(520,t+.18);g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(.13,t+.01);g.gain.exponentialRampToValueAtValue=undefined;g.gain.exponentialRampToValueAtTime(.0008,t+.18);o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+.2);}
+function deny(){initA();if(!actx||!son)return;const t=actx.currentTime,o=actx.createOscillator(),g=actx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(80,t+.22);g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(.11,t+.01);g.gain.exponentialRampToValueAtTime(.0008,t+.22);o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+.25);}
+function unlockS(){initA();[523,659,784,880,1046].forEach((f,k)=>{if(!actx)return;const t=actx.currentTime+k*.07,o=actx.createOscillator(),g=actx.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(.13,t+.012);g.gain.exponentialRampToValueAtTime(.0006,t+.16);o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+.18);});}
+function beepOk(){initA();if(!actx)return;const t=actx.currentTime,o=actx.createOscillator(),g=actx.createGain();o.type='sine';o.frequency.setValueAtTime(523,t);o.frequency.exponentialRampToValueAtTime(784,t+.13);g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(.12,t+.012);g.gain.exponentialRampToValueAtTime(.0006,t+.13);o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+.16);}
+function beepErr(){initA();if(!actx)return;const t=actx.currentTime,o=actx.createOscillator(),g=actx.createGain();o.type='sawtooth';o.frequency.setValueAtTime(280,t);o.frequency.exponentialRampToValueAtTime(140,t+.22);g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(.11,t+.012);g.gain.exponentialRampToValueAtTime(.0006,t+.22);o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+.25);}
+function finalOkS(){initA();[523,659,784,1046,1318].forEach((f,k)=>{if(!actx)return;const t=actx.currentTime+k*.09,o=actx.createOscillator(),g=actx.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(.13,t+.012);g.gain.exponentialRampToValueAtTime(.0006,t+.22);o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+.24);});}
+function finalKoS(){initA();if(!actx)return;const t=actx.currentTime,o=actx.createOscillator(),g=actx.createGain();o.type='sine';o.frequency.setValueAtTime(300,t);o.frequency.exponentialRampToValueAtTime(160,t+.4);g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(.13,t+.012);g.gain.exponentialRampToValueAtTime(.0006,t+.4);o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+.42);}
+function kaboom(){stopBubbles();initA();if(!actx||!son)return;const t=actx.currentTime;const sr=actx.sampleRate,buf=actx.createBuffer(1,Math.floor(sr*.7),sr),d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,1.6);const n=actx.createBufferSource();n.buffer=buf;const lp3=actx.createBiquadFilter();lp3.type='lowpass';lp3.frequency.setValueAtTime(1900,t);lp3.frequency.exponentialRampToValueAtTime(220,t+.6);const ng=actx.createGain();ng.gain.setValueAtTime(0.5,t);ng.gain.exponentialRampToValueAtTime(0.001,t+.7);n.connect(lp3);lp3.connect(ng);ng.connect(actx.destination);n.start(t);n.stop(t+.7);const o2=actx.createOscillator(),g2=actx.createGain();o2.type='sine';o2.frequency.setValueAtTime(130,t);o2.frequency.exponentialRampToValueAtTime(34,t+.5);g2.gain.setValueAtTime(0.0001,t);g2.gain.linearRampToValueAtTime(.5,t+.012);g2.gain.exponentialRampToValueAtTime(0.001,t+.6);o2.connect(g2);g2.connect(actx.destination);o2.start(t);o2.stop(t+.66);}
+document.getElementById('soundBtn').addEventListener('click',()=>{son=!son;initA();if(actx&&actx.state==='suspended')actx.resume();if(son)startBubbles();else stopBubbles();document.getElementById('soundBtn').textContent=son?'🔊':'🔇';});
+document.getElementById('btnRef').addEventListener('click',()=>{let rfOpen=document.getElementById('bodyRef').classList.contains('open');document.getElementById('bodyRef').classList.toggle('open',!rfOpen);document.getElementById('btnRef').classList.toggle('open',!rfOpen);});
+[0,1,2,3,4].forEach(i=>{document.getElementById('cb'+i).addEventListener('change',function(){document.getElementById('gi'+i).classList.toggle('checked',this.checked);});});
+document.addEventListener('pointerdown',initA,{once:true});
+initPerms();buildStars();buildLab();renderState();loadQ();
+</script>
+</body>
+</html>
