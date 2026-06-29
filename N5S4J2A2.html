@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Le Carnet du Voyageur — Je relève le défi</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=JetBrains+Mono:wght@500;700&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#fffdf7;--j:#f5a623;--jd:#7a3d00;--jl:#fff8ee;--jm:#f5c87a;
+  --ok:#22c55e;--okbg:#f0fdf4;--okbd:#86efac;
+  --ko:#ef4444;--kobg:#fef2f2;--kobd:#fca5a5;
+  --txt:#2b2b2b;--mut:#8a7a5a;--ln:#e8dfc8;
+}
+body{background:var(--bg);font-family:'Nunito',Arial,sans-serif;color:var(--txt);min-height:100vh;}
+
+/* ─── HEADER ─── */
+.hdr{text-align:center;padding:14px 20px 10px;background:var(--bg);border-bottom:2px solid var(--j);}
+.badge{display:inline-flex;align-items:center;gap:8px;background:#fefdf8;border:2px solid var(--j);border-radius:999px;padding:5px 14px;margin-bottom:6px;}
+.pdots{display:flex;gap:3px;}
+.pdot{width:9px;height:9px;border-radius:50%;}
+.badge .lab{font-size:12px;font-weight:800;color:var(--jd);font-family:'Orbitron',sans-serif;letter-spacing:.5px;}
+.wk{font-size:.82rem;color:var(--mut);margin-bottom:5px;}
+.hdr h1{font-family:'Orbitron',sans-serif;font-size:clamp(1.2rem,4vw,1.8rem);font-weight:900;color:var(--jd);margin-bottom:3px;}
+.hdr h1 .acc{color:var(--j);}
+.hsub{color:var(--mut);font-size:.82rem;}
+
+/* ─── LAYOUT ─── */
+.wrap{max-width:1060px;margin:0 auto;padding:14px 14px 60px;}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;}
+@media(max-width:800px){.layout{grid-template-columns:1fr;}}
+.col-l{position:sticky;top:14px;align-self:start;display:flex;flex-direction:column;gap:12px;}
+
+/* ─── PAYSAGE SVG ─── */
+.paysage-wrap{background:#1a3a5a;border:2px solid var(--j);border-radius:16px;overflow:hidden;
+  box-shadow:0 4px 20px rgba(245,166,35,.15);position:relative;}
+.paysage-wrap svg{display:block;width:100%;}
+.paysage-label{font-family:'Orbitron',sans-serif;font-size:.6rem;letter-spacing:2px;
+  color:var(--j);text-align:center;padding:7px 0 5px;background:rgba(0,0,0,.3);}
+
+/* Éléments SVG — cachés par défaut */
+#sky{transition:opacity 1s;}
+#sol{transition:opacity 1s;}
+#arbre-g{transform-origin:50% 100%;transform:scaleY(0);transition:transform .9s cubic-bezier(.34,1.3,.64,1);opacity:0;}
+#fleurs-g{opacity:0;transition:opacity .8s .2s;}
+#nuages-g{opacity:0;transition:opacity 1s;}
+#ruisseau-g{opacity:0;transition:opacity .8s .3s;}
+#soleil-g{opacity:0;transition:opacity 1s;transform:translateY(20px);transition:opacity .9s,transform 1s cubic-bezier(.34,1.2,.64,1);}
+#oiseaux-g{opacity:0;transition:opacity .8s .4s;}
+
+/* Classes d'activation */
+#arbre-g.show{transform:scaleY(1);opacity:1;}
+#fleurs-g.show{opacity:1;}
+#nuages-g.show{opacity:1;}
+#ruisseau-g.show{opacity:1;}
+#soleil-g.show{opacity:1;transform:translateY(0);}
+#oiseaux-g.show{opacity:1;}
+
+/* Progression paysage */
+.prog-paysage{display:flex;gap:6px;padding:8px 12px;background:rgba(0,0,0,.25);}
+.pp{flex:1;height:6px;background:rgba(255,255,255,.15);border-radius:20px;transition:background .5s;}
+.pp.done{background:var(--j);box-shadow:0 0 6px rgba(245,166,35,.5);}
+
+/* Score */
+.scoreboard{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.sc-b{background:#fff;border:1px solid var(--ln);border-radius:12px;padding:10px 6px;text-align:center;}
+.sc-n{font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:700;line-height:1;}
+.sc-n.ok{color:var(--ok);}.sc-n.rs{color:var(--j);}.sc-n.ko{color:var(--ko);}
+.sc-l{font-size:.62rem;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;margin-top:2px;}
+.stars-row{display:flex;justify-content:center;gap:3px;font-size:1.1rem;}
+.str{opacity:.2;transition:all .4s;}.str.on{opacity:1;color:var(--j);animation:stpop .5s;}
+@keyframes stpop{0%{transform:scale(0);}60%{transform:scale(1.3);}100%{transform:scale(1);}}
+
+/* Texte du défi */
+.txt-card{background:#fff;border:1px solid var(--ln);border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.04);}
+.txt-btn{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;
+  cursor:pointer;background:var(--jl);border:none;width:100%;font-family:'Nunito',sans-serif;
+  font-size:.95rem;font-weight:800;color:var(--jd);}
+.txt-btn:hover{background:var(--jm);}
+.txt-arr{transition:transform .3s;color:var(--jd);}
+.txt-btn.open .txt-arr{transform:rotate(180deg);}
+.txt-body{max-height:0;overflow:hidden;transition:max-height .4s ease;}
+.txt-body.open{max-height:700px;}
+.txt-inner{padding:13px 15px;font-size:.9rem;line-height:1.95;color:#3a2a0a;font-style:italic;
+  border-top:1px solid var(--ln);}
+
+/* Référentiel */
+.ref-card{background:#fff;border:1px solid var(--ln);border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.04);}
+.ref-btn{display:flex;align-items:center;justify-content:space-between;padding:11px 15px;
+  cursor:pointer;background:#f0fdf4;border:none;width:100%;font-family:'Nunito',sans-serif;
+  font-size:.9rem;font-weight:800;color:#166534;}
+.ref-btn:hover{background:#dcfce7;}
+.ref-arr{transition:transform .3s;}.ref-btn.open .ref-arr{transform:rotate(180deg);}
+.ref-body{max-height:0;overflow:hidden;transition:max-height .4s ease;}
+.ref-body.open{max-height:700px;}
+.ref-inner{padding:12px 14px;border-top:1px solid #e0f0e0;}
+.ri{margin-bottom:7px;font-size:.85rem;line-height:1.55;}
+.ri:last-child{margin-bottom:0;}
+.rk{color:#166534;font-weight:800;}.rv{color:#3a4a3a;}
+
+/* ─── COL DROITE ─── */
+.xpw{height:18px;background:#e8dfc8;border:1px solid var(--jm);border-radius:30px;overflow:hidden;position:relative;margin-bottom:12px;}
+.xpf{height:100%;background:linear-gradient(90deg,var(--jd),var(--j),#f5d090);border-radius:30px;transition:width .7s cubic-bezier(.34,1.56,.64,1);width:0%;}
+.xpt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:900;color:var(--jd);font-family:'JetBrains Mono',monospace;}
+
+/* Consigne */
+.consigne-box{background:var(--jl);border:1px solid var(--jm);border-radius:12px;padding:11px 15px;margin-bottom:12px;font-size:.9rem;color:var(--jd);line-height:1.7;font-style:italic;}
+
+/* Stepper */
+.stepper{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.sdots{display:flex;gap:5px;flex:1;justify-content:center;}
+.sdot{width:28px;height:28px;border-radius:50%;border:2px solid var(--jm);background:#f0e8d0;
+  color:var(--mut);font-size:.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .25s;font-family:'JetBrains Mono',monospace;}
+.sdot.cur{border-color:var(--jd);color:var(--jd);box-shadow:0 0 7px rgba(245,166,35,.4);transform:scale(1.1);}
+.sdot.done{background:var(--ok);border-color:var(--ok);color:#fff;}
+.sdot.err{background:var(--kobg);border-color:var(--ko);color:var(--ko);}
+.snav{min-width:42px;height:42px;border-radius:10px;background:#fff;border:1px solid var(--ln);
+  color:var(--jd);font-size:1rem;cursor:pointer;font-weight:800;font-family:'Nunito',sans-serif;}
+.snav:disabled{opacity:.4;cursor:default;}
+.snav:hover:not(:disabled){background:var(--jl);}
+#sNxt{background:var(--j);color:#3a1800;border-color:var(--jm);min-width:120px;font-size:.88rem;
+  box-shadow:0 4px 0 var(--jd);font-family:'Orbitron',sans-serif;font-weight:700;letter-spacing:.3px;}
+#sNxt:disabled{background:#e8d9a0;color:#9a8040;border-color:#e0d090;box-shadow:none;}
+#sNxt:hover:not(:disabled){filter:brightness(1.05);}
+#sNxt.pulse{animation:nbp 1s ease-in-out 3;}
+@keyframes nbp{50%{box-shadow:0 4px 0 var(--jd),0 0 0 6px rgba(245,166,35,.25);transform:scale(1.03);}}
+
+/* Question */
+.qcard{background:#fff;border:2px solid var(--ln);border-top:4px solid var(--j);border-radius:14px;
+  padding:16px;box-shadow:0 3px 10px rgba(0,0,0,.04);margin-bottom:12px;}
+.qcard.dok{border-top-color:var(--ok);}
+.qnum{font-family:'Orbitron',sans-serif;font-size:.62rem;letter-spacing:2px;color:var(--j);margin-bottom:4px;}
+.qfig{display:inline-block;background:var(--jl);border:1px solid var(--jm);border-radius:6px;
+  padding:3px 10px;font-size:.72rem;font-weight:800;color:var(--jd);margin-bottom:10px;font-family:'Orbitron',sans-serif;}
+.qfig.ok{background:var(--okbg);border-color:var(--okbd);color:#166534;}
+.qtxt{font-size:1rem;font-weight:800;line-height:1.5;color:var(--txt);margin-bottom:13px;}
+.opts{display:flex;flex-direction:column;gap:8px;}
+.opt{min-height:50px;background:var(--bg);color:var(--txt);border:2px solid var(--ln);
+  border-radius:10px;padding:11px 14px;font-size:.9rem;font-family:'Nunito',sans-serif;
+  text-align:left;cursor:pointer;transition:all .15s;line-height:1.5;font-weight:700;}
+.opt:hover:not(:disabled){background:var(--jl);border-color:var(--j);transform:translateY(-1px);}
+.opt:disabled{cursor:default;}
+.opt.cok{background:var(--okbg);border-color:var(--ok);color:#166534;}
+.opt.cko{background:var(--kobg);border-color:var(--ko);color:#991b1b;animation:sh .4s;}
+@keyframes sh{25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+.fb{margin-top:10px;padding:10px 13px;background:#fffbef;border-left:4px solid var(--ko);
+  border-radius:8px;font-size:.85rem;color:#7a3a1a;line-height:1.75;}
+.fb .fbl{display:block;font-size:.62rem;text-transform:uppercase;letter-spacing:1px;
+  color:var(--ko);font-family:'JetBrains Mono',monospace;margin-bottom:3px;}
+.retry{margin-top:8px;min-height:2.4rem;background:#fff;color:var(--jd);border:2px solid var(--j);
+  border-radius:8px;padding:0 14px;font-size:.85rem;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;}
+.retry:hover{background:var(--jl);}
+.okmsg{color:var(--ok);font-weight:800;font-size:.9rem;margin-top:8px;display:flex;align-items:center;gap:6px;}
+
+/* ─── ÉTAPE 2 PRODUCTION ─── */
+#etape2{display:none;background:#fff;border:2px solid var(--j);border-radius:16px;
+  padding:18px;box-shadow:0 4px 16px rgba(245,166,35,.1);}
+#etape2.show{display:block;animation:fdin .5s;}
+@keyframes fdin{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.e2-titre{font-family:'Orbitron',sans-serif;font-size:.88rem;font-weight:900;color:var(--jd);margin-bottom:10px;letter-spacing:.5px;}
+.e2-consigne{background:var(--jl);border:1px solid var(--jm);border-radius:10px;padding:12px 14px;
+  font-size:.9rem;color:var(--jd);line-height:1.75;margin-bottom:14px;font-style:italic;}
+.textarea-wrap{position:relative;margin-bottom:14px;}
+textarea{width:100%;min-height:140px;padding:12px 14px;font-size:.95rem;font-family:'Nunito',sans-serif;
+  line-height:1.75;border:2px solid var(--jm);border-radius:10px;background:#fffdf7;
+  resize:vertical;color:var(--txt);outline:none;transition:border-color .2s;}
+textarea:focus{border-color:var(--j);}
+.word-count{font-size:.72rem;color:var(--mut);font-family:'JetBrains Mono',monospace;margin-top:4px;text-align:right;}
+
+/* Grille auto-éval */
+.grille-titre{font-family:'Orbitron',sans-serif;font-size:.7rem;letter-spacing:1px;color:var(--jd);margin-bottom:8px;}
+.grille{display:flex;flex-direction:column;gap:7px;margin-bottom:16px;}
+.gcrit{display:flex;align-items:flex-start;gap:10px;padding:9px 12px;background:#fffdf7;
+  border:1.5px solid var(--ln);border-radius:9px;cursor:pointer;transition:all .2s;}
+.gcrit:hover{background:var(--jl);border-color:var(--jm);}
+.gcrit.checked{background:var(--okbg);border-color:var(--okbd);}
+.gcb{width:20px;height:20px;border:2px solid var(--jm);border-radius:5px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:.8rem;margin-top:1px;transition:all .2s;}
+.gcrit.checked .gcb{background:var(--ok);border-color:var(--ok);color:#fff;}
+.gc-txt{font-size:.85rem;line-height:1.55;color:var(--txt);}
+.gcrit.checked .gc-txt{color:#166534;}
+
+/* Bouton valider rédaction */
+.btn-valid{min-height:2.8rem;background:var(--j);color:#3a1800;border:none;border-radius:11px;
+  padding:0 24px;font-weight:900;font-size:.95rem;cursor:pointer;
+  font-family:'Orbitron',sans-serif;box-shadow:0 4px 0 var(--jd);letter-spacing:.3px;}
+.btn-valid:hover{filter:brightness(1.05);}
+.btn-valid:active{transform:translateY(3px);}
+.btn-valid:disabled{background:#e0d090;color:#8a7040;box-shadow:none;cursor:default;}
+
+/* Exemple modèle */
+#modele-wrap{display:none;margin-top:16px;background:#f0fdf4;border:1px solid var(--okbd);
+  border-radius:12px;padding:14px;animation:fdin .5s;}
+#modele-wrap.show{display:block;}
+.mod-titre{font-family:'Orbitron',sans-serif;font-size:.68rem;letter-spacing:1.5px;
+  color:#166534;margin-bottom:10px;}
+.mod-txt{font-size:.9rem;font-style:italic;line-height:1.9;color:#1a3a1a;margin-bottom:10px;}
+.mod-figs{font-size:.8rem;color:#3a6a3a;line-height:1.7;background:#e8fce8;border-radius:8px;padding:9px 12px;}
+.mod-figs span{font-weight:800;}
+
+/* Bilan final */
+#bilan-wrap{display:none;text-align:center;margin-top:16px;}
+#bilan-wrap.show{display:block;animation:fdin .5s;}
+.bil-icon{font-size:3.5rem;margin-bottom:6px;}
+.bil-score{font-family:'Orbitron',sans-serif;font-size:clamp(2rem,7vw,3rem);font-weight:900;color:var(--jd);}
+.bil-titre{font-family:'Orbitron',sans-serif;font-size:1rem;color:var(--j);margin:6px 0;}
+.bil-msg{font-size:.9rem;color:var(--mut);line-height:1.7;max-width:460px;margin:0 auto;}
+
+/* Flash emoji */
+.emoji-flash{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);
+  font-size:5rem;z-index:9999;pointer-events:none;animation:efpop 1.8s ease-out forwards;}
+@keyframes efpop{0%{transform:translate(-50%,-50%) scale(0);opacity:0;}
+  20%{transform:translate(-50%,-50%) scale(1.3);opacity:1;}
+  65%{transform:translate(-50%,-50%) scale(1);opacity:1;}
+  100%{transform:translate(-50%,-50%) scale(.7);opacity:0;}}
+
+/* Unlock flash */
+.unlock-flash{position:fixed;inset:0;z-index:8000;display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.7);pointer-events:none;}
+.unlock-flash.show{display:flex;animation:fdin .3s;}
+.uf-box{background:linear-gradient(135deg,var(--jl),#fff8d0);border:3px solid var(--j);
+  border-radius:20px;padding:28px 36px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.4);}
+.uf-icon{font-size:3.5rem;margin-bottom:8px;}
+.uf-msg{font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:900;color:var(--jd);}
+.uf-sub{font-size:.9rem;color:var(--mut);margin-top:4px;}
+
+@media(max-width:800px){.col-l{position:static;}}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="badge">
+    <div class="pdots"><div class="pdot" style="background:#e05050;"></div><div class="pdot" style="background:#f5a623;"></div><div class="pdot" style="background:#8dc63f;"></div></div>
+    <span class="lab">PAZAPA · FRANÇAIS · 5ÈME</span>
+  </div>
+  <div class="wk">Semaine 4 — Jour 2</div>
+  <h1>🗺️ Le paysage du <span class="acc">Voyageur</span></h1>
+  <p class="hsub">Figures de style · Repérage + Production guidée · Défi final</p>
+</div>
+
+<div class="wrap">
+<div class="layout">
+
+<!-- ══ COL GAUCHE ══ -->
+<aside class="col-l">
+
+  <!-- PAYSAGE SVG -->
+  <div class="paysage-wrap">
+    <div class="paysage-label">Le paysage du voyageur</div>
+    <svg viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#b8d8f0"/>
+          <stop offset="100%" stop-color="#daeef8"/>
+        </linearGradient>
+        <linearGradient id="skyGrad2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#4a90c8"/>
+          <stop offset="100%" stop-color="#87c8e8"/>
+        </linearGradient>
+        <linearGradient id="praGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#7ab84a"/>
+          <stop offset="100%" stop-color="#4a8a28"/>
+        </linearGradient>
+        <linearGradient id="colGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#9acd60"/>
+          <stop offset="100%" stop-color="#6aaa38"/>
+        </linearGradient>
+        <linearGradient id="mtnGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#a8b8c0"/>
+          <stop offset="100%" stop-color="#7a9098"/>
+        </linearGradient>
+        <linearGradient id="rvGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#3a8ab8"/>
+          <stop offset="50%" stop-color="#5ab0d8"/>
+          <stop offset="100%" stop-color="#3a8ab8"/>
+        </linearGradient>
+        <linearGradient id="trGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#6a3810"/>
+          <stop offset="100%" stop-color="#4a2808"/>
+        </linearGradient>
+      </defs>
+
+      <!-- FOND GRIS (état initial — paysage vide) -->
+      <rect x="0" y="0" width="400" height="220" fill="#cdd8e0"/>
+      <rect x="0" y="130" width="400" height="90" fill="#b8c8c0"/>
+      <text x="200" y="110" text-anchor="middle" font-size="11" fill="#8a9aaa"
+        font-family="Arial" opacity="1" id="txt-vide">Résous les énigmes pour révéler le paysage…</text>
+
+      <!-- Q1 — CIEL + COLLINES + PRAIRIE (base) -->
+      <g id="q1-g" style="opacity:0;transition:opacity 1.2s;">
+        <!-- Ciel -->
+        <rect x="0" y="0" width="400" height="160" fill="url(#skyGrad2)"/>
+        <!-- Horizon lumineux -->
+        <rect x="0" y="140" width="400" height="20" fill="#c8e8b0" opacity=".6"/>
+        <!-- Collines lointaines -->
+        <ellipse cx="80" cy="145" rx="100" ry="35" fill="#8ac860"/>
+        <ellipse cx="230" cy="148" rx="130" ry="30" fill="#9ad870"/>
+        <ellipse cx="370" cy="143" rx="90" ry="32" fill="#88c058"/>
+        <!-- Prairie -->
+        <rect x="0" y="158" width="400" height="62" fill="url(#praGrad)"/>
+        <!-- Ondulations terrain -->
+        <path d="M0 170 Q50 162 110 168 Q170 174 250 165 Q320 158 400 166 L400 220 L0 220Z" fill="#6aaa38" opacity=".7"/>
+      </g>
+
+      <!-- Q2 — MONTAGNES + NUAGES -->
+      <g id="q2-g" style="opacity:0;transition:opacity 1.2s .1s;">
+        <!-- Montagnes à gauche -->
+        <polygon points="20,148 70,80 120,148" fill="url(#mtnGrad)"/>
+        <polygon points="50,148 110,68 170,148" fill="#8090a0"/>
+        <polygon points="0,148 45,92 90,148" fill="#90a0b0" opacity=".8"/>
+        <!-- Neige sommet -->
+        <polygon points="70,80 80,93 60,93" fill="#e8eef2"/>
+        <polygon points="110,68 122,84 98,84" fill="#e8eef2"/>
+        <!-- Nuages réalistes -->
+        <g opacity=".92">
+          <ellipse cx="290" cy="32" rx="34" ry="14" fill="#f0f4f8"/>
+          <ellipse cx="312" cy="26" rx="24" ry="13" fill="#fff"/>
+          <ellipse cx="268" cy="30" rx="20" ry="11" fill="#f0f4f8"/>
+          <ellipse cx="290" cy="42" rx="32" ry="8" fill="#e8ecf0"/>
+        </g>
+        <g opacity=".85">
+          <ellipse cx="120" cy="52" rx="28" ry="11" fill="#f0f4f8"/>
+          <ellipse cx="138" cy="46" rx="20" ry="10" fill="#fff"/>
+          <ellipse cx="102" cy="50" rx="16" ry="9" fill="#e8ecf0"/>
+        </g>
+      </g>
+
+      <!-- Q3 — FORÊT + RIVIÈRE -->
+      <g id="q3-g" style="opacity:0;transition:opacity 1.2s .15s;">
+        <!-- Forêt — arbres réalistes à droite -->
+        <!-- Troncs -->
+        <rect x="278" y="130" width="6" height="38" fill="url(#trGrad)"/>
+        <rect x="304" y="125" width="7" height="43" fill="url(#trGrad)"/>
+        <rect x="332" y="128" width="6" height="40" fill="url(#trGrad)"/>
+        <rect x="356" y="132" width="5" height="36" fill="url(#trGrad)"/>
+        <!-- Feuillages — cônes/dômes sombres -->
+        <ellipse cx="281" cy="120" rx="18" ry="22" fill="#2a6820"/>
+        <ellipse cx="307" cy="112" rx="22" ry="26" fill="#308030"/>
+        <ellipse cx="335" cy="116" rx="20" ry="24" fill="#286020"/>
+        <ellipse cx="359" cy="121" rx="16" ry="20" fill="#2a7028"/>
+        <!-- Reflets lumière sur feuillages -->
+        <ellipse cx="277" cy="114" rx="8" ry="10" fill="#4aaa38" opacity=".5"/>
+        <ellipse cx="303" cy="106" rx="10" ry="12" fill="#50b840" opacity=".5"/>
+        <ellipse cx="331" cy="110" rx="9" ry="11" fill="#48a030" opacity=".5"/>
+        <!-- Sous-bois ombre -->
+        <rect x="262" y="150" width="138" height="15" fill="#1a4818" opacity=".4"/>
+        <!-- Rivière sinueuse -->
+        <path d="M 0 188 C 40 183 70 192 110 186 C 150 180 190 190 230 184 C 270 178 310 186 350 182 C 370 180 390 184 400 182"
+          fill="none" stroke="url(#rvGrad)" stroke-width="10" stroke-linecap="round" opacity=".9"/>
+        <!-- Reflets rivière -->
+        <path d="M 30 187 C 60 184 90 188 120 185"
+          fill="none" stroke="#aad8f0" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>
+        <path d="M 200 186 C 230 183 260 187 290 184"
+          fill="none" stroke="#aad8f0" stroke-width="2" stroke-linecap="round" opacity=".6"/>
+      </g>
+
+      <!-- Q4 — SOLEIL + VÉGÉTATION PRAIRIE -->
+      <g id="q4-g" style="opacity:0;transition:opacity 1.2s .2s;transform:translateY(8px);">
+        <!-- Soleil réaliste (halo progressif) -->
+        <circle cx="52" cy="34" r="36" fill="#f5c518" opacity=".12"/>
+        <circle cx="52" cy="34" r="26" fill="#f5c518" opacity=".22"/>
+        <circle cx="52" cy="34" r="18" fill="#fdd835" opacity=".95"/>
+        <circle cx="52" cy="34" r="13" fill="#ffe57a"/>
+        <!-- Herbes et végétation prairie -->
+        <!-- Tiges d'herbes variées -->
+        <g stroke="#4a8a28" stroke-linecap="round" fill="none">
+          <line x1="28" y1="168" x2="24" y2="155" stroke-width="1.5"/>
+          <line x1="34" y1="168" x2="38" y2="152" stroke-width="1.5"/>
+          <line x1="62" y1="165" x2="58" y2="150" stroke-width="1.5"/>
+          <line x1="68" y1="165" x2="72" y2="150" stroke-width="1.5"/>
+          <line x1="140" y1="166" x2="137" y2="153" stroke-width="1.5"/>
+          <line x1="148" y1="165" x2="152" y2="151" stroke-width="1.5"/>
+          <line x1="200" y1="168" x2="197" y2="154" stroke-width="1.5"/>
+          <line x1="208" y1="167" x2="212" y2="153" stroke-width="1.5"/>
+        </g>
+        <!-- Pierres moussues chemin -->
+        <ellipse cx="90" cy="195" rx="14" ry="7" fill="#8a8a7a" opacity=".7"/>
+        <ellipse cx="95" cy="193" rx="10" ry="5" fill="#6a8a5a" opacity=".5"/>
+        <ellipse cx="160" cy="198" rx="10" ry="5" fill="#8a8a7a" opacity=".6"/>
+        <ellipse cx="245" cy="196" rx="12" ry="6" fill="#7a7a6a" opacity=".65"/>
+      </g>
+
+      <!-- Q5 — LUMIÈRE COMPLÈTE + OISEAUX + PROFONDEUR -->
+      <g id="q5-g" style="opacity:0;transition:opacity 1.4s .2s;">
+        <!-- Halo lumière dorée horizon -->
+        <rect x="0" y="135" width="400" height="30" fill="url(#skyGrad)" opacity=".4"/>
+        <!-- Oiseaux en vol (silhouettes simples réalistes) -->
+        <g fill="none" stroke="#334" stroke-width="1.5" stroke-linecap="round">
+          <path d="M110 42 C115 38 121 38 126 42"/>
+          <path d="M130 35 C136 30 143 30 149 35"/>
+          <path d="M155 46 C160 42 166 42 171 46"/>
+          <path d="M175 38 C179 34 184 34 188 38"/>
+        </g>
+        <!-- Second plan : petit village lointain -->
+        <rect x="178" y="142" width="8" height="10" fill="#c8b090" opacity=".6"/>
+        <polygon points="174,142 190,142 182,135" fill="#b09070" opacity=".6"/>
+        <rect x="192" y="144" width="6" height="8" fill="#c8b090" opacity=".5"/>
+        <polygon points="188,144 200,144 194,138" fill="#b09070" opacity=".5"/>
+      </g>
+
+    </svg>
+    <div class="prog-paysage">
+      <div class="pp" id="pp0"></div>
+      <div class="pp" id="pp1"></div>
+      <div class="pp" id="pp2"></div>
+      <div class="pp" id="pp3"></div>
+      <div class="pp" id="pp4"></div>
+    </div>
+  </div>
+
+  <!-- Scores -->
+  <div class="scoreboard">
+    <div class="sc-b"><div class="sc-n ok" id="scOk">0</div><div class="sc-l">Trouvées</div></div>
+    <div class="sc-b"><div class="sc-n rs" id="scRs">5</div><div class="sc-l">Restantes</div></div>
+    <div class="sc-b"><div class="sc-n ko" id="scKo">0</div><div class="sc-l">Erreurs</div></div>
+  </div>
+  <div class="stars-row" id="starsRow"></div>
+
+  <!-- Texte du défi -->
+  <div class="txt-card">
+    <button class="txt-btn" id="btnTxt">📜 Texte du défi <span class="txt-arr">▾</span></button>
+    <div class="txt-body" id="bodyTxt">
+      <div class="txt-inner">« En contrebas s'étendait une vallée si verte et si calme qu'on aurait dit un tableau peint avec soin. Un ruisseau la traversait en serpentant paresseusement, comme s'il prenait tout son temps pour rejoindre la rivière. Plus loin, une forêt dense veillait sur la vallée, gardienne silencieuse des lieux. Partout des fleurs sauvages, partout des herbes hautes, partout le bourdonnement discret des insectes. Sur le chemin, on apercevait des pierres moussues, des racines noueuses, des fougères enroulées et quelques champignons discrets. Le vent, voyageur infatigable, glissait entre les feuilles sans jamais s'arrêter. »</div>
+    </div>
+  </div>
+
+  <!-- Référentiel -->
+  <div class="ref-card">
+    <button class="ref-btn" id="btnRef">📋 Référentiel — Figures de style <span class="ref-arr">▾</span></button>
+    <div class="ref-body" id="bodyRef">
+      <div class="ref-inner">
+        <div class="ri"><span class="rk">Comparaison</span><span class="rv"> — rapprochement explicite avec un outil (comme, tel, ainsi que…). Ex. : « blanc comme neige ».</span></div>
+        <div class="ri"><span class="rk">Métaphore</span><span class="rv"> — identification directe sans outil comparatif. Ex. : « la vie est un voyage ».</span></div>
+        <div class="ri"><span class="rk">Personnification</span><span class="rv"> — action ou sentiment humain prêté à un être non humain. Ex. : « le soleil sourit ».</span></div>
+        <div class="ri"><span class="rk">Accumulation</span><span class="rv"> — liste d'éléments à la suite pour créer un effet d'abondance. Ex. : « pierres, racines, fougères ».</span></div>
+        <div class="ri"><span class="rk">Anaphore</span><span class="rv"> — répétition d'un même mot ou groupe en début de proposition. Ex. : « Partout… partout… partout ».</span></div>
+      </div>
+    </div>
+  </div>
+
+</aside>
+
+<!-- ══ COL DROITE ══ -->
+<main>
+  <div class="xpw"><div class="xpf" id="xpf"></div><div class="xpt" id="xpt">0 / 5</div></div>
+
+  <div class="consigne-box">« Pour chaque figure de style indiquée, sélectionne la citation exacte du texte qui l'illustre. »</div>
+
+  <!-- Stepper -->
+  <div id="anNum" style="font-family:'Orbitron',sans-serif;font-size:.62rem;letter-spacing:2px;color:var(--j);margin-bottom:4px;"></div>
+
+  <div id="dq"></div>
+
+  <!-- STEPPER SOUS LES BLOCS -->
+  <div class="stepper">
+    <button class="snav" id="sPrv">◂</button>
+    <div class="sdots" id="sDots"></div>
+    <button class="snav" id="sNxt">Suivant ▸</button>
+  </div>
+
+  <!-- ÉTAPE 2 PRODUCTION -->
+  <div id="etape2">
+    <div class="e2-titre">✍️ Étape 2 — Production guidée</div>
+    <div class="e2-consigne">« Rédige une courte description (5 à 6 lignes) d'un paysage de ton choix (montagne, désert, bord de mer, forêt…). Emploie au moins quatre des cinq figures de style étudiées : comparaison, métaphore, personnification, accumulation, anaphore. »</div>
+    <div class="textarea-wrap">
+      <textarea id="redac" placeholder="Écris ta description ici…" oninput="updWC()"></textarea>
+      <div class="word-count" id="wc">0 mot(s)</div>
+    </div>
+    <div class="grille-titre">✅ Grille d'auto-évaluation</div>
+    <div class="grille">
+      <div class="gcrit" id="g0" onclick="toggleG(0)"><div class="gcb" id="gcb0"></div><div class="gc-txt">J'ai employé une <strong>comparaison</strong> (avec un outil comparatif visible).</div></div>
+      <div class="gcrit" id="g1" onclick="toggleG(1)"><div class="gcb" id="gcb1"></div><div class="gc-txt">J'ai employé une <strong>métaphore</strong> (identification sans outil comparatif).</div></div>
+      <div class="gcrit" id="g2" onclick="toggleG(2)"><div class="gcb" id="gcb2"></div><div class="gc-txt">J'ai employé une <strong>personnification</strong> (action ou sentiment humain prêté à un élément non humain).</div></div>
+      <div class="gcrit" id="g3" onclick="toggleG(3)"><div class="gcb" id="gcb3"></div><div class="gc-txt">J'ai employé une <strong>accumulation</strong> (au moins trois éléments énumérés).</div></div>
+      <div class="gcrit" id="g4" onclick="toggleG(4)"><div class="gcb" id="gcb4"></div><div class="gc-txt">J'ai employé une <strong>anaphore</strong> (répétition en début de proposition).</div></div>
+      <div class="gcrit" id="g5" onclick="toggleG(5)"><div class="gcb" id="gcb5"></div><div class="gc-txt">Mon texte respecte la ponctuation et les majuscules.</div></div>
+    </div>
+    <button class="btn-valid" id="btnValid" onclick="validerRedac()">Corriger ▸</button>
+
+    <!-- Feedback IA -->
+    <div id="ia-feedback" style="display:none;margin-top:14px;background:#f0f7ff;border:1.5px solid #3ab5d8;border-radius:12px;padding:14px 16px;font-size:.9rem;line-height:1.8;color:#1a2a3a;">
+      <div style="font-family:'Orbitron',sans-serif;font-size:.62rem;letter-spacing:1.5px;color:#3ab5d8;margin-bottom:8px;">✦ CORRECTION</div>
+      <div id="ia-text"></div>
+    </div>
+
+    <!-- Exemple modèle (fallback si IA indisponible) -->
+    <div id="modele-wrap">
+      <div class="mod-titre">📖 Exemple de production modèle</div>
+      <div class="mod-txt">« Le désert s'étendait à perte de vue, immense tapis doré sous le soleil brûlant. Les dunes, vagues de sable figées, ondulaient comme une mer immobile. Partout le silence, partout la chaleur, partout cet horizon sans fin. Quelques touffes d'épineux, des cailloux blanchis, des traces d'animaux discrètes et de rares fleurs résistantes témoignaient d'une vie cachée. »</div>
+      <div class="mod-figs"><span>Figures employées dans le modèle :</span> métaphore — « vagues de sable figées » ; comparaison — « comme une mer immobile » ; anaphore — « partout » ; accumulation — « touffes d'épineux, cailloux blanchis, traces d'animaux, fleurs résistantes ».</div>
+    </div>
+  </div>
+
+  <!-- Bilan final -->
+  <div id="bilan-wrap">
+    <div class="bil-icon" id="bilIcon"></div>
+    <div class="bil-score" id="bilScore"></div>
+    <div class="bil-titre" id="bilTitre"></div>
+    <div class="bil-msg" id="bilMsg"></div>
+  </div>
+
+</main>
+</div>
+</div>
+
+<!-- Unlock flash -->
+<div class="unlock-flash" id="unlockFlash">
+  <div class="uf-box">
+    <div class="uf-icon">✍️</div>
+    <div class="uf-msg">Étape 2 débloquée !</div>
+    <div class="uf-sub">Tu peux maintenant rédiger ta description.</div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let son=true, actx=null;
+
+/* ══ DONNÉES ══ */
+const DEFIS=[
+  {
+    figure:'Comparaison',
+    qst:'Quelle citation illustre une comparaison ?',
+    opts:[
+      '« gardienne silencieuse des lieux »',
+      '« comme s\'il prenait tout son temps »',
+      '« le bourdonnement discret des insectes »'
+    ],
+    ok:1,
+    fb:'L\'expression comme s\'il prenait tout son temps introduit un rapprochement explicite à l\'aide de l\'outil comparatif comme. Le ruisseau (comparé) est rapproché d\'un voyageur qui prendrait son temps (comparant implicite).',
+    paysage:()=>{ $('q1-g').style.opacity='1'; $('txt-vide').style.display='none'; }
+  },
+  {
+    figure:'Métaphore',
+    qst:'Quelle citation illustre une métaphore ?',
+    opts:[
+      '« une vallée si verte et si calme »',
+      '« le vent, voyageur infatigable »',
+      '« des pierres moussues, des racines noueuses »'
+    ],
+    ok:1,
+    fb:'Le vent est identifié directement à un voyageur infatigable, sans outil comparatif. C\'est une métaphore : le comparé (le vent) et le comparant (un voyageur) sont posés comme identiques.',
+    paysage:()=>{ $('q2-g').style.opacity='1'; }
+  },
+  {
+    figure:'Personnification',
+    qst:'Quelle citation illustre une personnification ?',
+    opts:[
+      '« une forêt dense veillait sur la vallée »',
+      '« un ruisseau la traversait en serpentant »',
+      '« des fleurs sauvages, partout des herbes hautes »'
+    ],
+    ok:0,
+    fb:'Veiller sur est une action proprement humaine (surveiller avec attention, protéger). La prêter à la forêt, c\'est la personnifier. Serpenter est un verbe qui décrit une trajectoire, pas une action humaine au sens propre.',
+    paysage:()=>{ $('q3-g').style.opacity='1'; }
+  },
+  {
+    figure:'Accumulation',
+    qst:'Quelle citation illustre une accumulation ?',
+    opts:[
+      '« comme s\'il prenait tout son temps »',
+      '« des pierres moussues, des racines noueuses, des fougères enroulées et quelques champignons discrets »',
+      '« le vent glissait entre les feuilles »'
+    ],
+    ok:1,
+    fb:'Quatre éléments distincts sont énumérés à la suite : pierres, racines, fougères, champignons. Cette accumulation donne une impression de richesse et de diversité du chemin parcouru.',
+    paysage:()=>{ $('q4-g').style.opacity='1'; }
+  },
+  {
+    figure:'Anaphore',
+    qst:'Quelle citation illustre une anaphore ?',
+    opts:[
+      '« partout des fleurs sauvages, partout des herbes hautes, partout le bourdonnement discret des insectes »',
+      '« une vallée si verte et si calme »',
+      '« sans jamais s\'arrêter »'
+    ],
+    ok:0,
+    fb:'Le mot partout est répété trois fois en tête de chaque groupe de mots. Cette répétition insiste sur l\'omniprésence de la nature dans la vallée décrite. C\'est une anaphore.',
+    paysage:()=>{ $('q5-g').style.opacity='1'; }
+  }
+];
+
+const N=5;
+let cur=0;
+let st=DEFIS.map(()=>({tried:false,ok:false,busy:false}));
+let perms=[];
+let grille=new Array(6).fill(false);
+let etape2done=false;
+
+/* Permutations */
+function mkPerm(n,ok){
+  const oth=[];for(let i=0;i<n;i++)if(i!==ok)oth.push(i);
+  for(let i=oth.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[oth[i],oth[j]]=[oth[j],oth[i]];}
+  const pos=Math.floor(Math.random()*n);const p=[];let di=0;
+  for(let i=0;i<n;i++)p.push(i===pos?ok:oth[di++]);return p;
+}
+function initPerms(){perms=DEFIS.map(d=>mkPerm(d.opts.length,d.ok));}
+initPerms();
+
+/* Stars */
+function buildStars(){const w=$('starsRow');w.innerHTML='';
+  for(let i=0;i<N;i++){const s=document.createElement('span');s.className='str';s.id='str'+i;s.textContent='★';w.appendChild(s);}}
+buildStars();
+function updStars(n){for(let i=0;i<N;i++){const s=$('str'+i);if(s)s.classList.toggle('on',i<n);}}
+
+/* Score */
+function score(){return st.filter(s=>s.ok).length;}
+function errs(){return st.filter(s=>s.tried&&!s.ok).length;}
+function updScore(){
+  const ok=score(),ko=errs(),rs=N-ok;
+  $('scOk').textContent=ok;$('scRs').textContent=rs;$('scKo').textContent=ko;
+  const pct=(ok/N)*100;$('xpf').style.width=pct+'%';$('xpt').textContent=ok+' / '+N;
+  updStars(ok);
+  // Barre paysage
+  for(let i=0;i<N;i++) $('pp'+i).classList.toggle('done',i<ok);
+}
+
+/* Render */
+function renderQ(i){
+  $('anNum').textContent='Figure '+(i+1)+' / '+N;
+  const dq=$('dq');dq.innerHTML='';
+  const d=DEFIS[i];const s=st[i];const p=perms[i];
+  const card=document.createElement('div');
+  card.className='qcard'+(s.ok?' dok':'');
+  card.innerHTML=`<div class="qnum">QUESTION ${i+1} / ${N}</div>
+    <div class="qfig${s.ok?' ok':''}">${d.figure}</div>
+    <div class="qtxt">${d.qst}</div>
+    <div class="opts" id="opts${i}"></div>
+    <div id="fb${i}"></div>`;
+  dq.appendChild(card);
+  const box=$('opts'+i);
+  p.forEach(oi=>{
+    const b=document.createElement('button');b.className='opt';
+    b.textContent=d.opts[oi];
+    if(s.ok||s.tried){b.disabled=true;if(oi===d.ok)b.classList.add('cok');}
+    if(!s.ok&&!s.tried)b.addEventListener('click',()=>ans(i,oi));
+    box.appendChild(b);
+  });
+  if(s.ok){card.querySelector('#fb'+i).innerHTML='<div class="okmsg">✔ Bonne réponse !</div>';}
+  if(s.tried&&!s.ok){
+    card.querySelector('#fb'+i).innerHTML=`<div class="fb"><span class="fbl">À revoir</span>${d.fb}</div>
+      <button class="retry" onclick="retryQ(${i})">Réessayer</button>`;}
+  updDots();
+}
+
+function retryQ(i){
+  const d=DEFIS[i];
+  perms[i]=mkPerm(d.opts.length,d.ok);
+  st[i].tried=false;renderQ(i);}
+
+function ans(i,oi){
+  const s=st[i];if(s.busy||s.ok)return;s.busy=true;
+  const d=DEFIS[i];s.tried=true;
+  if(oi===d.ok){
+    s.ok=true;okS();flashEmoji(i);
+    // Enrichir le paysage
+    d.paysage();
+    updScore();renderQ(i);
+    // Vérifier déblocage étape 2 — seulement après la 5e bonne réponse
+    if(score()===5&&!etape2done) setTimeout(unlockEtape2,600);
+    // Vérifier bilan complet
+    if(score()===5) setTimeout(showBilan,900);
+  } else {
+    dnyS();updScore();renderQ(i);}
+  s.busy=false;}
+
+/* Étape 2 */
+function unlockEtape2(){
+  etape2done=true;
+  const uf=$('unlockFlash');uf.classList.add('show');
+  setTimeout(()=>uf.classList.remove('show'),2200);
+  // Afficher l'étape 2 SANS scroller — l'élève reste sur le paysage
+  setTimeout(()=>{$('etape2').classList.add('show');},500);
+}
+
+/* Grille */
+function toggleG(i){
+  grille[i]=!grille[i];
+  $('g'+i).classList.toggle('checked',grille[i]);
+  $('gcb'+i).textContent=grille[i]?'✓':'';
+}
+
+function updWC(){
+  const txt=$('redac').value.trim();
+  const words=txt?txt.split(/\s+/).length:0;
+  $('wc').textContent=words+' mot(s)';
+}
+
+async function validerRedac(){
+  const texte=$('redac').value.trim();
+  if(!texte||texte.length<20) return;
+  $('btnValid').disabled=true;
+  $('btnValid').textContent='Correction en cours…';
+  $('modele-wrap').classList.add('show');
+  try {
+    const resp = await fetch('/.netlify/functions/corriger',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({texte})
+    });
+    if(!resp.ok) throw new Error(resp.status);
+    const data = await resp.json();
+    $('ia-text').innerHTML=data.correction.replace(/\n/g,'<br>');
+    $('ia-feedback').style.display='block';
+  } catch(e) {
+    // Fallback silencieux — l'exemple modèle est déjà affiché
+  }
+  $('btnValid').disabled=false;
+  $('btnValid').textContent='Corriger ▸';
+  showBilan();
+}
+
+/* Bilan */
+function showBilan(){
+  const ok=score();const gchecked=grille.filter(Boolean).length;
+  let icon,titre,msg;
+  if(ok===5&&gchecked===6){icon='🏆';titre='Carnet du voyageur complété !';msg='Tu maîtrises les cinq figures de style et sais les réinvestir dans ta propre écriture.';}
+  else if(ok>=4){icon='🥇';titre='Très bon repérage.';msg='Vérifie bien ta grille d\'auto-évaluation.';}
+  else{icon='📖';titre='Continue !';msg='Reprends le texte du défi et les ateliers précédents avant de retenter.';}
+  $('bilan-wrap').innerHTML=
+    '<div class="bil-icon">'+icon+'</div>'+
+    '<div class="bil-score">'+ok+' / 5</div>'+
+    '<div class="bil-titre">'+titre+'</div>'+
+    '<div class="bil-msg">'+msg+'</div>'+
+    '<button class="btn-valid" style="margin-top:16px;" onclick="recommencer()">🔄 Recommencer</button>';
+  $('bilan-wrap').classList.add('show');victS();
+}
+
+function recommencer(){
+  st=DEFIS.map(()=>({tried:false,ok:false,busy:false}));
+  grille=new Array(6).fill(false);etape2done=false;
+  initPerms();
+  // Reset paysage
+  ['q1-g','q2-g','q3-g','q4-g','q5-g'].forEach(id=>{const el=$(id);if(el)el.style.opacity='0';});
+  const tv=$('txt-vide');if(tv)tv.style.display='';
+  // Reset grille
+  for(let i=0;i<6;i++){const g=$('g'+i);const gc=$('gcb'+i);
+    if(g)g.classList.remove('checked');if(gc)gc.textContent='';}
+  grille=new Array(6).fill(false);
+  const r=$('redac');if(r)r.value='';
+  $('wc').textContent='0 mot(s)';
+  $('etape2').classList.remove('show');
+  $('modele-wrap').classList.remove('show');
+  $('bilan-wrap').classList.remove('show');$('bilan-wrap').innerHTML='';
+  const bv=$('btnValid');if(bv)bv.disabled=false;
+  updScore();buildStars();go(0);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* Flash emoji */
+const EMOJIS=['🌿','🍃','🌸','🌊','🌤️'];
+function flashEmoji(i){
+  const em=EMOJIS[i]||'✨';
+  const el=document.createElement('div');el.className='emoji-flash';el.textContent=em;
+  document.body.appendChild(el);setTimeout(()=>el.remove(),1900);}
+
+/* Dots */
+function updDots(){const w=$('sDots');w.innerHTML='';
+  DEFIS.forEach((_,i)=>{const d=document.createElement('div');d.className='sdot';
+    if(i===cur)d.classList.add('cur');if(st[i].ok)d.classList.add('done');
+    else if(st[i].tried&&!st[i].ok)d.classList.add('err');
+    d.textContent=i+1;d.addEventListener('click',()=>go(i));w.appendChild(d);});}
+
+function go(i){cur=i;renderQ(i);
+  $('sPrv').disabled=i===0;
+  $('sNxt').textContent=i===N-1?'Voir le bilan':'Suivant ▸';}
+
+/* Sons */
+function initA(){if(actx)return;try{actx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}
+function tone(f1,f2,d,tp,vol,dl){if(!actx||!son)return;const t=actx.currentTime+(dl||0);
+  const o=actx.createOscillator(),g=actx.createGain();o.type=tp||'sine';
+  o.frequency.setValueAtTime(f1,t);o.frequency.exponentialRampToValueAtTime(f2,t+d);
+  g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(vol||0.12,t+0.012);
+  g.gain.exponentialRampToValueAtTime(0.0006,t+d);
+  o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+d+0.03);}
+function okS(){initA();tone(523,784,.15,'sine',.12,0);tone(784,1046,.13,'sine',.10,.09);}
+function dnyS(){initA();tone(240,140,.2,'sine',.11,0);}
+function victS(){initA();[523,659,784,1046,1318].forEach((f,k)=>tone(f,f,.25,'sine',.12,k*.09));}
+
+/* Accordéons */
+let txtO=false,rfO=false;
+$('btnTxt').addEventListener('click',()=>{txtO=!txtO;$('bodyTxt').classList.toggle('open',txtO);$('btnTxt').classList.toggle('open',txtO);});
+$('btnRef').addEventListener('click',()=>{rfO=!rfO;$('bodyRef').classList.toggle('open',rfO);$('btnRef').classList.toggle('open',rfO);});
+
+/* Stepper */
+$('sPrv').addEventListener('click',()=>go(Math.max(0,cur-1)));
+$('sNxt').addEventListener('click',()=>{if(cur<N-1)go(cur+1);else showBilan();});
+
+document.addEventListener('pointerdown',initA,{once:true});
+
+/* Init */
+updScore();go(0);
+</script>
+</body>
+</html>
