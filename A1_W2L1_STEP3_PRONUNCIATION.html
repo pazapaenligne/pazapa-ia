@@ -13,404 +13,58 @@ Language model: British English (en-GB)
 File: A1_W2L1_STEP3_PRONUNCIATION_CLINIC_AI_FEEDBACK.html
 ================================================================================
 
-REVISION HEADER
+CURRENT STATE
 --------------------------------------------------------------------------------
-Pass 1 — superseded historical record. See the latest pass and CURRENT STATE
-  sections for the active implementation. Initial build of Step 3 with optional
-  AI-assisted speaking feedback.
-  · Six approved lesson phrases, taken verbatim from the brief and cross-checked
-    against Week_2_Lesson_1_My_Daily_Routine.pdf. All six are attested in the
-    workbook (pp. 1–5). No phrase was invented, reworded or extended.
-  · Speaking chunks taken verbatim from the brief. Not altered.
-  · AUDIO_FILES declared with twelve keys (normal + slow for each phrase;
-    the slow keys were removed in Pass 6),
-    all empty at that point because no recordings had been supplied. SUPERSEDED
-    BY PASS 3: six normal-speed recordings are now embedded. For the current
-    state always read "AUDIO STATE" below, never this line.
-  · Optional AI-assisted speaking feedback added. Disabled by default because
-    CONFIG.feedbackEndpoint is empty for the administrator to fill.
-
-Pass 2 (superseded — history only) — workbook images embedded, on instruction.
-  · Five illustrations and the official logo extracted from
-    Week_2_Lesson_1_My_Daily_Routine.pdf, cropped, resized, re-encoded and
-    embedded as Base64 Data URLs. See the IMAGES block for provenance and the
-    post-embedding MD5 of every payload.
-  · Every image inspected before embedding for the women-only requirements.
-  · Phrase 6 had no image at that point: the workbook has no "go to bed" or
-    "sleep" illustration, and nothing was invented or substituted. SUPERSEDED
-    BY PASS 3: an image was supplied separately and is now embedded.
-  · Alt text added, written to the A1 standard (short, present simple).
-  · The header logo now uses the extracted official logo, with CONFIG.logoUrl
-    retained as an administrator override that takes precedence.
-  · No change to any phrase, chunk, feedback string, audio key, completion
-    behaviour, security control or navigation rule.
-
-Pass 3 (superseded — history only) — six real recordings and the sixth image embedded.
-  · Six supplied MP3s embedded as Base64 Data URLs on the *_normal keys,
-    level-normalised to the -15 dBFS batch target. Measurements, gains and
-    MD5s are tabulated under AUDIO STATE.
-  · All twelve audio keys REMAIN in audioPendingConfirmation, so no Listen
-    button renders yet. Wording confirmation by ear has not happened.
-  · The six *_slow recordings were still outstanding at that point.
-    Removed in Pass 6, then RESTORED IN PASS 7 as empty pending slots.
-  · The separately supplied "go to bed" illustration embedded on IMAGES.p6,
-    with A1 alt text. Style mismatch against the workbook art flagged in the
-    IMAGES block, not corrected.
-  · No change to any phrase, chunk, feedback string, completion behaviour,
-    security control or navigation rule.
-
-Pass 4 (superseded — history only) — full-file audit; five real defects corrected. No
-  redesign, no content change, no new features.
-  A. Critical
-     1. Switching audio (at the time, Listen -> Listen slowly; that control
-        was removed in Pass 6, and the fix still guards switching between any
-        two clips and between screens) left the
-        clip playing with every button reading "Listen" and aria-pressed
-        false, so it could not be stopped. Cause: pausing a clip rejects its
-        play() promise, and that rejection landed after the next clip had
-        started, wiping the new clip's state. Fixed with a generation token
-        checked in every audio callback. The teardown "error" event is also
-        now ignored when there is no src.
-     2. Leaving a screen while the recogniser was running left "Practise
-        speaking" disabled and labelled "Listening…" permanently, losing
-        speaking practice on that sentence for the rest of the session.
-        stopRecognition() now re-enables the panel it tore down, and the
-        recogniser callbacks ignore superseded instances.
-  B. Important
-     3. A feedback response arriving after Delete, Carry on, Skip or a screen
-        change repainted the panel, resurrecting a deleted transcript.
-        In-flight requests are now aborted and sequence-checked, and a panel
-        the learner has moved away from is wiped, since the transcript is
-        painted as soon as it is recognised and would otherwise still be on
-        screen on return. A skipped panel keeps its note.
-     4. Panel messages were announced twice by screen readers: the out region
-        is aria-live and the same text also went through the off-screen live
-        region. The duplicate announce() calls are removed. The off-screen
-        region is kept for the audio-failure message, which has no visible
-        live region.
-  C. Minor
-     5. Navigation scrolled the page 91px down, pushing the logo and the
-        position line off screen on a phone, because focus() scrolls its
-        target into view. Now focuses with preventScroll and returns to the
-        top.
-  Audited and found correct, left untouched: HTML structure (no duplicate IDs,
-  no broken aria-labelledby), no horizontal overflow at 390px, natural end of
-  playback, decode failure, rapid repeated taps on one button, audio stopping
-  on screen change, tap targets, contrast, English and French wording,
-  phrases, chunks and translations.
-  CORRECTION TO PASS 4: that pass also listed "completion firing once" and
-  "repeated Done presses" as audited and correct. That was wrong. The checks
-  behind it only proved that completion fired once and did not fire twice;
-  they never exercised a FAILING LMS, so they could not see that completion
-  latched on failure. Pass 5 found and fixed that. Do not read the Pass 4
-  list as evidence that completion reporting was ever reliable.
-
-Pass 5 (superseded — history only) — completion reporting, LMS boolean handling,
-  postMessage semantics, privacy wording and stale documentation corrected.
-  1. FALSE COMPLETION LATCHING. activityCompleted() set its latch before
-     doing any LMS work, so a failed report was recorded as done and could
-     never be retried. Commit's return value was also discarded, so a failed
-     Commit still counted as success. Now every applicable step must succeed
-     — initialisation, SetValue, Commit — and the latch is set only after
-     that. A failure leaves the state retryable; a success can never report
-     twice.
-  2. LMS BOOLEAN HANDLING. initLMS() compared with === "true", and
-     lmsSucceeded() used String(result) !== "true". Both rejected values real
-     wrappers return: boolean true passed only by coincidence of String(),
-     while "TRUE", "True" and " true " all failed. One helper, lmsTruthy(),
-     now handles every checked SCORM call and rejects false, "false" in any
-     case, "", null, undefined, numbers and unrelated values. The error code
-     is still checked afterwards, read once per call.
-  3. POSTMESSAGE TREATED AS DELIVERY. The relay ran without checking
-     window.parent !== window, so a standalone file posted to itself, and a
-     dispatch with no exception was allowed to stand in for LMS success. It
-     is now an optional relay only: skipped when standalone, gated on a
-     strictly validated origin, never "*", and it never sets lmsConfirmed.
-     Local completion and confirmed LMS completion are separate states. No
-     acknowledgement protocol was invented.
-  4. DONE BUTTON. It disabled itself before the outcome was known, stranding
-     the learner if reporting failed. It now always completes the activity
-     locally, shows the local message once, and stays enabled for a genuine
-     retry while distinguishing three outcomes in calm wording with no
-     technical detail and no warning when standalone by design.
-  5. PRIVACY WORDING. The earlier notice promised that the recording stayed
-     local to the learner's own device and could be deleted. That was
-     inaccurate: the Web Speech API belongs to the browser, and several
-     browsers process the audio on a provider service. Replaced in both
-     places, with the French kept consistent, and the technical comment
-     rewritten to separate what this file does from what it cannot promise.
-  6. DEAD CODE. recognisingIndex was assigned and cleared but never read;
-     removed. The duplicated "return b; return b;" reported in the brief does
-     not exist in this file — buildAudioButton has exactly one return, and a
-     scan found no other duplicated returns, unreachable statements or unused
-     functions or variables.
-  7. STALE DOCUMENTATION. Corrected the AUDIO_FILES comment that still said
-     all twelve keys were empty, documented that the AI feature is not
-     operational pending an administrator deployment, and withdrew the Pass 4
-     claim that completion behaviour had been audited as correct.
-  Preserved unchanged: all six phrases, chunks and translations; all thirteen
-  Base64 payloads, verified byte-for-byte by MD5 and SHA-256; all asset keys;
-  colours; typography; screen order; navigation; SCORM 1.2 and 2004 support;
-  strict origin validation; no autoplay; the single-audio-element
-  architecture; no scores or accent grading; no automatic navigation; no
-  LMSFinish or Terminate; and every Pass 4 race-condition fix.
-
-Pass 6 (superseded — history only) — slow-speed audio removed on instruction.
-  · Removed the six empty p*_slow keys from AUDIO_FILES.
-  · Removed the six p*_slow entries from audioPendingConfirmation, which now
-    holds six keys, all still pending confirmation by ear.
-  · Removed the slow field from every PHRASES entry.
-  · Removed the "Listen slowly" button from buildPhraseScreen.
-  · Documentation updated throughout, so nothing still refers to twelve keys
-    or to a slow control.
-    SUPERSEDED BY PASS 7: the slow scaffolding was restored on instruction,
-    because the Step 3 production specification requires slow-speed audio.
-  · FLAGGED, NOT SILENTLY ACCEPTED: the original Step 3 brief required the
-    model to supply normal-speed AND slow-speed audio. That requirement is
-    now deliberately unmet, and this file has nowhere to put a slow
-    recording. If slow audio is supplied later, the scaffolding must be added
-    back.
-  · Nothing else changed. The six normal-speed payloads and all seven image
-    payloads are byte-for-byte identical, verified by MD5 and SHA-256.
-
-Pass 7 (superseded — history only) — slow scaffolding restored, heading colour resolved.
-  1. SLOW-AUDIO SCAFFOLDING RESTORED, reversing Pass 6 on instruction. Six
-     empty p*_slow keys, six matching entries in audioPendingConfirmation, the
-     slow property on every PHRASES entry, and conditional construction of the
-     "Listen slowly" button. No recording was invented: the keys are empty, so
-     buildAudioButton returns null and no control is rendered. Nothing was
-     stretched, duplicated, rate-shifted or synthesised. Playback still runs
-     through the one persistent <audio> element, so only one clip can sound at
-     a time. When a real slow payload is embedded and its key released, its
-     button works with no further change — verified dynamically with a test
-     payload injected at test time only, never into this file.
-  2. HEADING COLOUR RESOLVED to #1B7E92 on written instruction, replacing
-     #2E2E2D. Applied to heading roles only. Contrast measured on every
-     background a heading actually occupies: 4.72:1 on white and 4.01:1 on the
-     blue-20% speaking panel, where the only heading is 20.4px bold and so
-     counts as large text. Both meet WCAG AA. No heading sits on light grey or
-     lime, where the ratio would have been short of 4.5:1.
-  3. LISTENING VERIFICATION NOT PERFORMED — see AUDIO STATE. All twelve keys
-     stay pending. This is an external blocker, not a fixed item.
-  4. AI BACKEND NOT DEPLOYED. The secure AI feedback backend is not included
-     in this deliverable. CONFIG.feedbackEndpoint remains empty, so
-     AI-assisted speaking feedback is disabled. No deployment access,
-     provider, API key or production origin was supplied, so nothing was
-     invented and no end-to-end request was made.
-  Preserved unchanged: all six sentences, chunks and translations; all thirteen
-  Base64 payloads, verified byte-for-byte by MD5 and SHA-256; screen order;
-  navigation; accessibility and focus management; every audio race-condition
-  and stale-response protection; recognition cancellation; AbortController
-  handling; privacy controls; SCORM 1.2 and 2004 behaviour including retry;
-  strict postMessage origin handling; Done on the final screen only; and no
-  automatic navigation.
-
-Pass 8 (superseded — history only) — six real slow-speed recordings embedded.
-  · Six supplied slow MP3s embedded on the p*_slow keys as Base64 Data URLs,
-    level-normalised to the same -15 dBFS speech-RMS target as the normal
-    batch. Measurements, gains and MD5s are tabulated under AUDIO STATE.
-  · VERIFIED BEFORE EMBEDDING, by measurement not assumption: each file is
-    byte-distinct from every normal recording, all six are distinct from each
-    other, each decodes cleanly, and each is measurably slower than its
-    normal counterpart in speech duration. This mattered: an earlier batch
-    under similar filenames turned out to contain four byte-identical copies
-    of the normal recordings and two takes that were SHORTER than normal, and
-    was rejected rather than embedded.
-  · All twelve keys REMAIN in audioPendingConfirmation. Wording confirmation
-    by ear still has not happened, so no Listen or Listen slowly control
-    renders. Recordings existing is not the same as recordings verified.
-  · The internal chunk pauses (2.05s-2.20s) were left exactly as supplied.
-  · The thirteen pre-existing payloads are byte-for-byte identical, verified
-    by MD5 and SHA-256.
-
-Pass 9 (superseded — history only) — mobile and tablet audio verification and hardening.
-  · VERIFIED DYNAMICALLY with real touch events on four emulated profiles
-    (360x740 phone, 320x568 small phone, 768x1024 and 1024x768 tablet) plus a
-    mobile Safari user-agent run: tap starts playback, playback advances, the
-    normal/slow switch works, six rapid taps leave at most one clip active,
-    a screen change stops audio, every control is at least 48x48, and nothing
-    overflows sideways at any width.
-  · The assertion that matters most on iOS: HTMLMediaElement.play() is
-    instrumented during the tests and every call is confirmed to happen while
-    navigator.userActivation.isActive is true — that is, inside the tap
-    gesture. A play() outside a live activation is the usual cause of silent
-    failure on iOS, and there are none.
-  · HARDENED: stopAudio() no longer strips src and calls load(). That forced
-    a fresh load on every subsequent tap and made load() emit a spurious
-    error event. It now pauses and rewinds, and playAudio() assigns src only
-    when the clip actually changes, so replaying one recording rewinds
-    instead of reloading. Fewer load cycles inside a tap gesture is the safer
-    pattern on mobile Safari, and it satisfies the Pazapa Audio Standard
-    requirement that replay restarts the same source.
-  · ENGINE CAVEAT, stated plainly: only Chromium is installed in this
-    environment and it cannot be extended offline, so Safari on iOS and
-    iPadOS — which runs WebKit — was NOT executed. What was verified for
-    WebKit is architectural: one persistent <audio> element rather than
-    new Audio() per call, play() inside the gesture, no autoplay, no silent
-    unlock audio, no forced volume, muted or playbackRate, no hover-only
-    interaction, and no external or blob audio paths. Real-device testing on
-    an iPad and an iPhone is still required before deployment.
-
-Pass 10 (superseded — history only) — relay ordering and relay state corrected;
-  documentation defects corrected; test harness now shipped.
-  CODE
-  1. DONE-HANDLER ORDER. relayToParent() ran inside the localComplete block,
-     before activityCompleted(). So the very first successful completion
-     always relayed lmsConfirmed:false — the relay reported a stale state.
-     The order is now: record local completion, reveal the next-activity
-     control, attempt LMS completion, update the learner status, then relay.
-  2. RELAY STATE. The relay used to be guarded by a permanent "already sent"
-     boolean, so after a failed report relayed false, a successful retry
-     could never send the corrected true. That variable is gone, replaced by
-     lastRelayedState (null until a dispatch). The relay now suppresses an
-     identical repeat, permits one updated message when the state moves
-     false -> true, returns a boolean, and does not record the state when
-     postMessage throws — so a throw leaves the relay retryable.
-  DOCUMENTATION
-  3. The Pass 1 heading no longer names an outdated pass number as the
-     active state; it points to the latest pass instead.
-  4. Removed the sentence asserting that the backend file exists and meets
-     its security specification. The backend is not included in this
-     deliverable.
-  5. The pending-list comment said no slow recording exists. It now carries
-     the required wording: all twelve are embedded and all twelve remain
-     pending human listening.
-  6. Removed the COMPLETION line asserting that the completion call is
-     guarded to a single run, which contradicted the intentionally retryable
-     implementation, and replaced it with an accurate description.
-  HARNESS
-  7. The test harness is now delivered as a runnable file rather than only
-     described. See test_step3.py and its README section.
-
-Pass 11 (superseded — history only) — all twelve recordings released on administrator
-  confirmation by ear.
-  · audioPendingConfirmation is now empty. Every Listen and Listen slowly
-    control renders, on all six sentence screens.
-  · The confirmation is recorded with its date and attributed to the
-    programme administrator, because this file cannot hear audio and must not
-    imply that it checked the recordings itself.
-  · The withdrawal mechanism is untouched and documented: adding a key back
-    to audioPendingConfirmation removes its control again, with no other
-    change. Nothing about the release path was loosened.
-  · No payload was altered. All nineteen are byte-for-byte identical, MD5 and
-    SHA-256.
-  · Not a deployment clearance. Real-device Safari testing on iPhone and
-    iPad, the secure AI backend, feedbackEndpoint and the production Moodle
-    origin all remain outstanding.
-
-Pass 12 (superseded — history only) — endpoint validation hardened. Production values
-  requested but NOT supplied, so nothing was configured.
-  · CONFIGURATION NOT DONE. The production origin and endpoint arrived as
-    unfilled placeholder text, so moodleOrigin and feedbackEndpoint remain
-    empty. Writing placeholder text into either would be worse than leaving
-    them empty: it would look configured and fail silently.
-  · NEW: isSafeEndpoint() now guards CONFIG.feedbackEndpoint, replacing the
-    looser isSafeUrl() at both gates. isSafeUrl() alone accepted two values
-    the deployment rules forbid: a localhost endpoint, which would ship a
-    development URL into production, and a URL carrying a query string, which
-    is where an API key would hide. Both are now refused, along with a
-    fragment and embedded credentials. Anything refused leaves speaking
-    practice off, which is the safe state.
-  · BACKEND (separate file): the provider key is now read under the variable
-    name this deployment mandates, with the previous name kept as a fallback
-    so a site already hosting corriger.js can share one key. Before this pass
-    the function read only the old name, so setting the mandated one on the
-    host would have left it keyless and serving the fallback message with no
-    visible error. Names and setup live in pronunciation-feedback.js and
-    PRONUNCIATION_FEEDBACK_SETUP.md; no key or key name belongs in this file.
-  · No payload, phrase, chunk, translation or layout was touched.
-
-Pass 13 (this delivery) — Record and compare added, on instruction (option B).
-  · New optional block on every sentence screen: Record, then Play my voice,
-    Listen to the model, Record again, Delete, Carry on, and Skip recording.
-    The learner records herself and compares. No scoring, no accent grading,
-    no AI — that was option C and was not chosen.
-  · Works with NO backend. It is gated on MediaRecorder and a secure context,
-    not on feedbackEndpoint, so it is usable in Moodle the moment this file is
-    uploaded, unlike the AI speaking panel.
-  · The audio engine was generalised: playSource() now drives the one
-    persistent <audio> element for both model clips and the learner's own
-    recording, sharing the generation token and one button-refresh pass, so
-    the two can never sound together.
-  · PRIVACY WORDING CHANGED, and this needs your attention. The speaking
-    panel's notice still correctly says that feature saves no recognised words
-    and no audio recording. The new recording panel has its own, different
-    notice, because it would be false to reuse the old one: it says the
-    recording stays in this browser, is not sent anywhere, and is deleted when
-    the learner leaves the sentence. That is what the code does.
-  · MediaRecorder and Blob are now present, which earlier passes forbade. The
-    prohibition that still holds, and is tested, is that the audio never
-    leaves the browser.
-  · Verified with a real MediaRecorder over localhost against a fake audio
-    device: 72 checks, including permission denial, blob-URL revocation after
-    Delete and after Record again, microphone release, rapid start/stop/start,
-    and completion with the microphone refused.
-  · No payload, phrase, chunk or translation was touched.
+Six approved lesson phrases and their speaking chunks, taken verbatim from the
+brief. All six have a normal-speed and a slow-speed recording embedded, plus
+one illustration each. No phrase was invented, reworded or extended.
 
 DELIBERATE DEVIATIONS FROM PROGRAMME DEFAULTS (each brief-mandated)
 --------------------------------------------------------------------------------
 1. EXTERNAL NETWORK CALL. The programme standard is zero external network
-   calls. This step makes one optional POST to CONFIG.feedbackEndpoint carrying
-   only {targetPhrase, recognisedText}. The offline path is fully preserved:
-   with the endpoint empty, with no network, or on any error, the activity
-   remains a complete Listen-and-Repeat model study and is completable.
-   Nothing about completion depends on the network.
+   calls. This step makes one POST to CONFIG.feedbackEndpoint carrying only
+   {targetPhrase, recognisedText}, sent only when the learner presses
+   Practise speaking. If speech recognition is unsupported, or the request
+   fails, the learner is never blocked: the panel does not render, or the
+   phrase already counts as attempted.
 2. MICROPHONE ACCESS. Requested only after the learner presses "Practise
-   speaking". Never on load.
-3a. RECORD AND COMPARE (Pass 13). This is the one feature that does hold a
-   recording. getUserMedia runs only on a press of Record, never on load. The
-   audio is a Blob in memory reached through an object URL; the URL is revoked
-   the moment the recording is discarded, and it is discarded on Delete,
-   Record again, Carry on, Skip, a screen change and page close. The
-   microphone track is stopped as soon as recording ends. It is never
-   uploaded, never sent to the feedback endpoint, and never written to
-   storage. Playback runs through the same single <audio> element as the model
-   clips, so the learner's voice and the model can never sound at once. There
-   is no scoring and no accent judgement: the learner hears the difference
-   herself. getUserMedia needs a secure context, so served from Moodle over
-   https it works, and opened from a local file the whole block is hidden with
-   a plain explanation.
+   speaking" or "Record", never on load.
+3a. RECORD AND COMPARE. This is the feature that holds a recording. getUserMedia
+   runs only on a press of Record, never on load. The audio is a Blob in
+   memory reached through an object URL; the URL is revoked the moment the
+   recording is discarded, and it is discarded on Delete, Record again, Carry
+   on, a screen change and page close. The microphone track is stopped as
+   soon as recording ends. It is never uploaded, never sent to the feedback
+   endpoint, and never written to storage. Playback runs through the same
+   single <audio> element as the model clips, so the learner's voice and the
+   model can never sound at once. There is no scoring and no accent
+   judgement: the learner hears the difference herself. getUserMedia needs a
+   secure context, so served from Moodle over https it works, and opened from
+   a local file the whole block is hidden with a plain explanation.
 3b. SPEECH RECOGNITION — WHAT THIS FILE CAN AND CANNOT PROMISE.
    What this file does:
-     · it does not use MediaRecorder;
-     · it does not create a Blob, an ObjectURL or an audio file;
-     · it does not store or upload an audio recording itself;
+     · it does not use MediaRecorder for this feature;
+     · it does not create a Blob, an ObjectURL or an audio file for it;
      · it holds the recognised transcript in memory only, and Delete, Try
-       again, Carry on, Skip and leaving the screen all clear it from memory
-       and from the DOM;
+       again, Carry on and leaving the screen all clear it from memory and
+       from the DOM;
      · the only thing it sends anywhere is the recognised transcript, to
        CONFIG.feedbackEndpoint, and only when the learner presses Practise
        speaking.
    What this file CANNOT promise, and so does not claim:
      · the Web Speech API is implemented by the browser, and several browsers
-       process the audio on a provider service rather than on the device. This
-       activity has no visibility into or control over that, so it must not
-       state that audio stays on the device, that the browser never transmits
-       audio, or that data held by a recognition provider can be deleted.
-   The learner-facing notice was corrected accordingly in Pass 5 and no longer
-   promises on-device processing.
+       process the audio on a provider service rather than on the device.
+       This activity has no visibility into or control over that, so it must
+       not state that audio stays on the device, that the browser never
+       transmits audio, or that data held by a recognition provider can be
+       deleted.
 
-AUDIO STATE — READ BEFORE DEPLOYMENT
+AUDIO STATE
 --------------------------------------------------------------------------------
 Twelve real recordings are embedded: one normal-speed and one slow-speed per
 sentence. Nothing is synthesised, stretched, rate-shifted or duplicated — the
 slow set is six separate real recordings, confirmed distinct from the normal
 set by checksum and measurably slower by speech duration.
-
-Slow set as supplied, before embedding (speech duration with silence stripped,
-so trailing gaps do not distort the comparison):
-
-  key       normal   slow    ratio   verdict
-  p1_slow    1.37s   1.77s   1.29x   slower
-  p2_slow    2.04s   2.70s   1.32x   slower
-  p3_slow    1.18s   2.10s   1.78x   slower
-  p4_slow    2.21s   2.67s   1.21x   slower, but the least slow of the six
-  p5_slow    1.54s   3.13s   2.03x   slower
-  p6_slow    1.19s   1.73s   1.45x   slower
-
-Every slow recording carries a deliberate pause at the chunk break, between
-2.05s and 2.20s long, with no leading silence and a tail under 0.51s. Those
-pauses are part of the supplied recordings and were NOT trimmed or shortened.
 
 LISTENING VERIFICATION: DONE. All twelve recordings — six normal-speed and six
 slow-speed — were confirmed by ear by the programme administrator on
@@ -426,49 +80,9 @@ duration, waveform, checksum or an automated transcription. Technical validity
 was verified separately — every payload decodes cleanly and every checksum
 round-trips — and is a different claim from wording being correct.
 
-Two observations raised before the sign-off, now accepted by it: p6_normal was
-the quietest source in its batch and needed +12.67 dB, so its noise floor sits
-higher than the others; and p4_slow is the least slow of the slow set at 1.21x
-its normal counterpart. Both are in use.
-
-NO LISTEN BUTTON RENDERS ANYWHERE YET. Every key remains in
-audioPendingConfirmation, because wording confirmation is a listening task and
-cannot be done from the file. Technical validity is not wording confirmation:
-each payload decodes cleanly and its MD5 round-trips, and neither fact tells
-anyone whether the recording says the right sentence. See HOW TO RELEASE A KEY
-in the comment above audioPendingConfirmation.
-
-Until keys are released, the written model sentence and the speaking chunks are
-visible on every screen, each screen says the audio model is not available yet,
-and Step 3 is fully completable with no audio.
-
-Recordings as embedded (normalised to a -15 dBFS speech-RMS batch target with a
-transparent limiter; source files untouched, gain applied without trimming):
-
-  key         source file              gain    RMS before  RMS after  peak  MD5
-  p1_normal   iwakeupat7_mp3.mp3       +4.45     -19.45      -15.93   -1.40 e82716b4770ded2d5ac6aaf3385dbe89
-  p2_normal   ihavebreakfast_mp3.mp3   +9.41     -24.41      -15.93   -1.40 2e3723d02e12c56775f8490ff4618b3f
-  p3_normal   iworkfromhome_mp3.mp3    +3.26     -18.26      -15.65   -1.40 a3133beb76f939ead6f4e878f4c7fb9c
-  p4_normal   studyevening_mp3.mp3    +10.97     -25.97      -15.83   -1.00 ff2a5bf7b011101cb8cd3547d60fbde2
-  p5_normal   whatdoyoudo_mp3.mp3      +6.30     -21.30      -16.23   -1.40 a92cab254fb1f01d93c6fb7b0dff50f9
-  p6_normal   bedten_mp3.mp3          +12.67     -27.67      -17.15   -1.40 1c140671ebece47edff9428e66125bec
-
-Slow recordings as embedded (same treatment, same target):
-
-  key         source file              gain    RMS before  RMS after  peak  MD5
-  p1_slow     wakeupslow_mp3.mp3      +13.16     -28.16      -16.59   -1.40 4d8b5d06a35330410020d5b110e0d88c
-  p2_slow     breakfastslow_mp3.mp3    +8.35     -23.35      -16.77   -1.40 a17230b2e931348ceb6198571075e1e1
-  p3_slow     workslow_mp3.mp3         +5.94     -20.94      -15.82   -1.50 491bf277e09ad3e6fb7b6e347b5964db
-  p4_slow     studyslow_mp3.mp3       +17.46     -32.46      -16.78   -1.40 ab57d1b8349c836f43738ddfeb5d17db
-  p5_slow     whatdoyouslow_mp3.mp3    +5.55     -20.55      -15.57   -1.40 3879a2528bf6bdce9604b47646a68225
-  p6_slow     gotobedslow_mp3.mp3     +15.03     -30.03      -16.42   -1.40 9601bc8f3843a4ab2f7f7968e78a1926
-
-Slow batch spread narrowed from 11.9 dB to 1.2 dB. Normal batch spread narrowed
-from 9.4 dB to 1.5 dB. No file clips. Re-encoded MP3
-mono 44.1 kHz 128 kbps, matching the source bitrate so gain is the only
-change to the audio. Each output runs 26 ms longer than its source: that is
-LAME encoder delay and padding, identical across all six, so no content was
-lost or trimmed.
+To withdraw a recording later (a wrong take, a re-record), add its key back to
+audioPendingConfirmation and its Listen control disappears on the next load,
+with no other change.
 
 No TTS, no synthetic speech, no placeholder tone exists in this file.
 
@@ -480,61 +94,44 @@ per-call pattern loses the user-gesture association and playback silently
 fails after the first item. The single element also guarantees the brief's
 "only one audio source plays at a time" requirement structurally.
 
-BRAND NOTE — HEADING COLOUR RESOLVED
+BRAND NOTE
 --------------------------------------------------------------------------------
-Headings use dark blue #1B7E92, because the Step 3 production brief requires it
-explicitly. For the record: that value is not in
-Pazapa_Brand_Guidelines_English, which publishes exactly six hex values plus
-20/40/60/80% tints, and a tint is lighter, so the palette contains no dark blue.
-It is used on written instruction, applied to heading roles only (h1, h2, h3 and
-the brand name), and to nothing else — body text, buttons, learner feedback,
-borders and images are untouched. Contrast was measured against every background
-a heading actually sits on and meets WCAG AA in each case; the figures are in
-the token comment in the stylesheet.
+Headings use dark blue #1B7E92, on written instruction, applied to heading
+roles only (h1, h2, h3 and the brand name), and to nothing else. Contrast was
+measured against every background a heading actually sits on and meets WCAG AA
+in each case; the figures are in the token comment in the stylesheet.
 
 COMPLETION
 --------------------------------------------------------------------------------
-Done appears on the final screen only.
-Successful LMS completion is latched once. Failed initialization, SetValue or
-Commit attempts remain retryable. Local lesson completion remains independent
-of LMS reporting.
-SCORM 1.2 and SCORM 2004 both supported, every call return-checked via
-lmsSucceeded(). No cmi.success_status. No score. No LMSFinish / Terminate.
-No auto-advance anywhere.
+Done appears on the final screen only. It works locally only: pressing it
+marks the activity as complete in this page, shows "Step 3 is complete.", and
+reveals the next-activity link only if one is configured. No LMS, no SCORM, no
+parent-window messaging and no score are involved anywhere in this file.
 
-Pass 14 (this delivery) — Practise speaking is required, on instruction.
-· Speaking practice is no longer optional wherever the feature is actually
-  available on the learner's device: the "Optional" badge, the "You do not
-  need to do this part" / "facultative" wording and the Skip speaking
-  practice button are all removed from the speak panel.
-· A phrase now counts as visited, for the purpose of unlocking the final
-  screen, only once the learner has both opened it AND made a speaking
-  attempt on it (any outcome — match, try again, unclear, or a mic-blocked
-  message all count as an attempt; the requirement is that they tried, not
-  that they got it right).
-· When speech recognition is unsupported by the browser, or the AI feedback
-  endpoint is not configured, the panel does not render at all (unchanged
-  from before) and nothing is required for that phrase — a learner is never
-  blocked by a feature their device cannot offer.
-· The optional record-and-compare panel (Record, Play my voice, Delete) is
-  untouched: it stays exactly as optional as before. Only "Practise
-  speaking" changed.
-
-Pass 15 (this delivery) — Record and compare is also required, on
-instruction. The same treatment as Pass 14: "Optional" badge, "facultatif"
-wording and the Skip recording button are removed; a phrase's recording
-counts as done, for unlocking the final screen, once any attempt has
-concluded (a successful recording, a failed one, or a mic-denied message
-all count — the requirement is that the learner tried). Required only
-where recordingSupported() says the device can actually offer it.
+REQUIRED ACTIVITIES
+--------------------------------------------------------------------------------
+Practise speaking and Record and compare are both required wherever the
+learner's browser can actually offer them — not optional. A phrase counts as
+done, for the purpose of unlocking the final screen, once the learner has both
+opened it and made an attempt at each required action on it (any outcome —
+a match, a try-again, an unclear result, a mic-denied message, or a technical
+timeout all count as an attempt; the requirement is that they tried, not that
+they got it right). Leaving a phrase screen without doing so is blocked, with
+an on-screen message naming exactly what is missing. When speech recognition
+or recording is unsupported by the device, or the AI feedback endpoint is not
+configured, the corresponding panel does not render and nothing is required
+for that phrase — a learner is never blocked by a feature their device cannot
+offer.
 
 STORAGE / PRIVACY
 --------------------------------------------------------------------------------
 No localStorage, no sessionStorage, no cookies, no analytics, no beacons.
-Only data ever leaving the browser: the approved target phrase and the
-recognised transcript, to CONFIG.feedbackEndpoint, and only when the learner
-attempts the speaking practice. No name, age, location, address, telephone or
-email is requested anywhere.
+AI feedback receives only the recognised transcript and the target phrase, to
+CONFIG.feedbackEndpoint, and only when the learner attempts Practise speaking.
+Record and compare audio is a temporary local recording that stays in this
+browser and is deleted when the learner leaves the sentence; it is never
+uploaded anywhere. No name, age, location, address, telephone or email is
+requested anywhere.
 ================================================================================
 -->
 <style>
@@ -703,7 +300,8 @@ button[disabled]:hover{background:#FFFFFF;}
 .pz-btn-done:hover{background:var(--pz-lime-80);}
 .pz-btn-quiet{background:#FFFFFF;border-color:var(--pz-dark);font-weight:400;}
 
-/* ---------- optional record-and-compare panel ---------- */
+/* ---------- record-and-compare panel: required when technically
+   available; skipped when unsupported ---------- */
 .pz-record{
   border:2px dashed var(--pz-lime-80);
   border-radius:var(--pz-radius);
@@ -711,16 +309,12 @@ button[disabled]:hover{background:#FFFFFF;}
 }
 .pz-rec-status{margin:12px 0 0;}
 
-/* ---------- optional speaking panel ---------- */
+/* ---------- speaking panel: required when technically available;
+   skipped when unsupported ---------- */
 .pz-speak{
   border:2px dashed var(--pz-blue-60);
   border-radius:var(--pz-radius);
   padding:14px;margin:18px 0 0;background:var(--pz-blue-20);
-}
-.pz-optional{
-  display:inline-block;font-size:0.82rem;font-weight:600;
-  background:#FFFFFF;border:1px solid var(--pz-dark);
-  border-radius:var(--pz-radius);padding:3px 10px;margin:0 0 8px;
 }
 .pz-privacy{
   font-size:0.9rem;margin:0 0 12px;
@@ -823,13 +417,17 @@ noscript p{
       Vous lisez chaque phrase, puis vous la dites à voix haute.</p>
 
       <div class="pz-card">
-        <h3>You can practise speaking</h3>
-        <p>Speaking practice is optional. You do not need it. You finish this
-        step when you read all six sentences.</p>
-        <p class="pz-privacy">Speaking practice is optional. This activity does
-        not save your recognised words or an audio recording.</p>
-        <p class="pz-fr" lang="fr">La pratique orale est facultative. Cette
-        activité n’enregistre ni vos mots reconnus ni un enregistrement audio.</p>
+        <h3>Practise speaking</h3>
+        <p>For each sentence, listen to the model, record your voice and
+        practise speaking before you carry on.</p>
+        <p class="pz-privacy">AI feedback receives only the recognised words.
+        Your Record and compare audio stays in this browser and is deleted
+        when you leave the sentence.</p>
+        <p class="pz-fr" lang="fr">Pour chaque phrase, écoutez le modèle,
+        enregistrez votre voix et entraînez-vous à parler avant de continuer.</p>
+        <p class="pz-fr" lang="fr">Le retour IA reçoit uniquement les mots
+        reconnus. L'enregistrement de Record and compare reste dans ce
+        navigateur et est supprimé lorsque vous quittez la phrase.</p>
         <p class="pz-label" id="pz-record-availability"></p>
         <p class="pz-label" id="pz-speak-availability"></p>
       </div>
@@ -885,14 +483,8 @@ noscript p{
 
 /* ============================================================================
    CONFIG — the single administrator edit point.
-   Every value below is intentionally left empty. Do not invent values.
    ========================================================================= */
 var CONFIG = {
-  /* Exact origin of your Moodle site, scheme + host (+ port only if non-standard).
-     No path, no trailing slash, no credentials. Example: "https://moodle.example.org"
-     Leave empty to disable postMessage entirely. */
-  moodleOrigin: "",
-
   /* Absolute https URL of the next activity. Leave empty to hide the button. */
   nextActivityUrl: "",
 
@@ -902,17 +494,8 @@ var CONFIG = {
 
   /* Absolute https URL of your deployed pronunciation-feedback function.
      Validated by isSafeEndpoint(): https only, no localhost, no query, no
-     fragment, no credentials.
-     THE AI SPEAKING FEATURE IS NOT OPERATIONAL. The secure AI feedback
-     backend is not included in this deliverable. CONFIG.feedbackEndpoint
-     remains empty, so AI-assisted speaking feedback is disabled. It cannot
-     work until an administrator supplies and deploys a separate secure
-     backend function and sets this value. No backend may ever live in this
-     HTML file: an API key must never appear in browser code.
-     WHILE THIS IS EMPTY the feature is safely switched off — no Practise
-     speaking control is rendered at all — and the activity remains a complete
-     and completable Listen-and-Repeat model study. The AI feedback path has
-     not been tested against a real endpoint, only against a mocked one. */
+     fragment, no credentials. Leave empty to switch the feature off — no
+     Practise speaking control is rendered — with no other change. */
   feedbackEndpoint: "https://pazapa-ia.netlify.app/.netlify/functions/pronunciation-feedback",
 
   /* Milliseconds to wait for the feedback endpoint before falling back. */
@@ -929,8 +512,7 @@ var CONFIG = {
      · all twelve were confirmed by ear by the programme administrator on
        10 September 2026 and released;
      · every Listen and Listen slowly control therefore renders.
-   The audio requirement is COMPLETE. Deployment is still blocked on other
-   items — see the CURRENT STATE summary at the head of this file.
+   The audio requirement is COMPLETE.
 
    Required wording per key, for whoever does the listening check:
      p1_normal / p1_slow   I wake up at seven.
@@ -1060,30 +642,8 @@ var FALLBACK_MSG = "Speaking feedback is unavailable right now. Listen to the " 
 var TOTAL_SCREENS = PHRASES.length + 2;   /* welcome + 6 phrases + completion */
 
 /* ============================================================================
-   URL / ORIGIN VALIDATION
+   URL VALIDATION
    ========================================================================= */
-
-/* Strict: scheme + host (+ port). Rejects a path, a trailing slash, a query,
-   a fragment, credentials, or anything not https (http allowed on localhost
-   only, for administrator testing). Never silently narrows a bad value. */
-function isSafeOrigin(value){
-  if (typeof value !== "string" || value === "") return false;
-  if (value !== value.trim()) return false;
-  if (value.indexOf("@") !== -1) return false;
-  var u;
-  try { u = new URL(value); } catch(e){ return false; }
-  if (u.protocol !== "https:"){
-    var local = (u.hostname === "localhost" || u.hostname === "127.0.0.1");
-    if (!(u.protocol === "http:" && local)) return false;
-  }
-  if (u.username !== "" || u.password !== "") return false;
-  if (u.pathname !== "/" ) return false;
-  if (u.search !== "" || u.hash !== "") return false;
-  /* Reject a trailing slash in the supplied string: an origin has none. */
-  if (value.charAt(value.length - 1) === "/") return false;
-  if (value !== u.origin) return false;
-  return true;
-}
 
 /* Absolute https URL, or a Data URL for an embedded image. */
 function isSafeUrl(value, allowDataImage){
@@ -1245,7 +805,7 @@ function refreshAudioButtons(){
 }
 
 /* ============================================================================
-   SPEECH RECOGNITION — optional, transcript only, no audio buffer
+   SPEECH RECOGNITION — required when supported, skipped when it is not
    ========================================================================= */
 var SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
 var recognition = null;
@@ -1254,12 +814,18 @@ var recognition = null;
    re-enables that button. Without it the button stayed disabled for the rest
    of the session and the learner lost speaking practice on that sentence. */
 var recognisingPanel = null;
+/* Safety timer: some browsers never fire onresult/onerror/onend if the
+   speech service stalls, which would otherwise leave the button stuck on
+   "Listening…" forever. */
+var recognitionTimer = null;
+var RECOGNITION_TIMEOUT_MS = 12000;
 
 function speakingEnabled(){
   return !!SR && isSafeEndpoint(CONFIG.feedbackEndpoint);
 }
 
 function stopRecognition(){
+  if (recognitionTimer){ clearTimeout(recognitionTimer); recognitionTimer = null; }
   if (recognisingPanel){
     setSpeakBusy(recognisingPanel, false);
     recognisingPanel = null;
@@ -1286,6 +852,7 @@ function startRecognition(index, panel){
 
   r.onresult = function(ev){
     if (recognition !== r) return;
+    if (recognitionTimer){ clearTimeout(recognitionTimer); recognitionTimer = null; }
     try {
       if (ev.results && ev.results[0] && ev.results[0][0]){
         got = String(ev.results[0][0].transcript || "");
@@ -1335,6 +902,19 @@ function startRecognition(index, panel){
   recognisingPanel = panel;
   setSpeakBusy(panel, true);
   showStatus(panel, "Listening. Say the sentence once.");
+  /* Fires only if none of onresult/onerror/onend ever arrives — a stalled
+     speech service, not a normal outcome, so it never claims a match or a
+     try-again; it just lets the learner move on. */
+  recognitionTimer = setTimeout(function(){
+    if (recognition !== r || settled) return;
+    settled = true;
+    stopRecognition();
+    panel.pzSpeakAttempted = true;
+    showStatus(panel, "Speaking practice did not respond in this browser. " +
+      "You can try again or carry on.");
+    var afterTimeout = panelPart(panel, "after-row");
+    if (afterTimeout) afterTimeout.hidden = false;
+  }, RECOGNITION_TIMEOUT_MS);
   try {
     r.start();
   } catch(e){
@@ -1450,7 +1030,8 @@ function focusIsApproved(focus, index){
 }
 
 /* ============================================================================
-   RECORD AND COMPARE — optional, added in Pass 13 on instruction.
+   RECORD AND COMPARE — added in Pass 13, required since Pass 15 when the
+   browser supports it (see Pass 15 note above).
 
    The learner records herself saying the sentence, plays it back, and compares
    it with the model. There is no scoring, no accent judgement and no AI: the
@@ -1848,7 +1429,7 @@ function buildPhraseScreen(index){
   chunkWrap.appendChild(ul);
   sec.appendChild(chunkWrap);
 
-  /* ---- optional record and compare (needs no backend) ---- */
+  /* ---- record and compare, required when the browser supports it ---- */
   if (recordingSupported()){
     sec.appendChild(buildRecordPanel(index, p));
   }
@@ -1876,7 +1457,15 @@ function buildSpeakPanel(index, p){
   panel.appendChild(fr);
 
   panel.appendChild(el("p", "pz-privacy",
-    "This activity does not save your recognised words or an audio recording."));
+    "AI feedback receives only the recognised words. Your Record and " +
+    "compare audio stays in this browser and is deleted when you leave " +
+    "the sentence."));
+  var frPrivacy = el("p", "pz-fr",
+    "Le retour IA reçoit uniquement les mots reconnus. L'enregistrement " +
+    "de Record and compare reste dans ce navigateur et est supprimé " +
+    "lorsque vous quittez la phrase.");
+  frPrivacy.setAttribute("lang", "fr");
+  panel.appendChild(frPrivacy);
 
   /* main action row */
   var row = el("div", "pz-btnrow");
@@ -2179,183 +1768,18 @@ function goForward(){
 function goBack(){ setNavStatus(""); showScreen(current - 1); }
 
 /* ============================================================================
-   SCORM — 1.2 and 2004, completion once, return-checked
+   COMPLETION — local only. No SCORM, no LMS, no parent window.
    ========================================================================= */
-var API = null, API_VERSION = null, lmsReady = false;
-
-/* TWO SEPARATE STATES. They are deliberately not conflated.
-
-   localComplete    the learner finished the visible activity. Always
-                    reachable, with or without an LMS. Never depends on
-                    reporting succeeding.
-   lmsConfirmed     an LMS route accepted the status AND committed it. Latched
-                    only on genuine success, so a failure stays retryable.
-   lastRelayedState the lmsConfirmed value most recently dispatched, or null
-                    if nothing has been. A plain "already sent" boolean was
-                    wrong: after a failed report relayed false, a successful
-                    retry could never send the corrected true. Dispatch is
-                    still NOT delivery, and never implies lmsConfirmed. */
 var localComplete = false;
-var lmsConfirmed = false;
-var lastRelayedState = null;
 
-function findAPI(win){
-  var depth = 0;
-  while (win && depth < 12){
-    if (win.API_1484_11){ API_VERSION = "2004"; return win.API_1484_11; }
-    if (win.API){ API_VERSION = "1.2"; return win.API; }
-    if (win.parent && win.parent !== win){ win = win.parent; depth++; }
-    else break;
-  }
-  try {
-    if (window.opener){
-      if (window.opener.API_1484_11){ API_VERSION = "2004"; return window.opener.API_1484_11; }
-      if (window.opener.API){ API_VERSION = "1.2"; return window.opener.API; }
-    }
-  } catch(e){}
-  return null;
-}
-
-/* The single helper for LMS success values, used by every checked SCORM call.
-   SCORM specifies the strings "true"/"false", but wrappers in the wild return
-   a real boolean, differing case, or padded strings.
-   Accepts: true, "true", "TRUE", "True", " true ".
-   Rejects: false, "false" in any case, "", null, undefined, numbers, and any
-   unrelated value. */
-function lmsTruthy(value){
-  if (value === true) return true;
-  if (typeof value !== "string") return false;
-  return value.trim().toLowerCase() === "true";
-}
-
-/* Reads the last error code. 0 = no error. 101 = general exception.
-   103 = already initialised. */
-function lmsError(){
-  try {
-    return String(API_VERSION === "2004" ? API.GetLastError() : API.LMSGetLastError());
-  } catch(e){ return "101"; }
-}
-
-/* A successful-looking result is accepted only when the error code agrees. */
-function lmsSucceeded(result){
-  if (!lmsTruthy(result)) return false;
-  return lmsError() === "0";
-}
-
-/* True when an LMS API object exists at all. This separates "standalone by
-   design, nothing to report to" from "LMS present, reporting failed" — the
-   two cases need different wording for the learner. */
-function lmsPresent(){
-  if (!API){
-    try { API = findAPI(window); } catch(e){ API = null; }
-  }
-  return !!API;
-}
-
-/* Initialises, or accepts an already-open session. Error 103 is the one
-   explicitly benign code here: the session is usable, so a false result
-   carrying 103 counts as ready. The error is read once, because some
-   implementations reset it on the next API call. */
-function ensureLmsReady(){
-  if (lmsReady) return true;
-  if (!lmsPresent()) return false;
-  try {
-    var r = (API_VERSION === "2004") ? API.Initialize("") : API.LMSInitialize("");
-    var code = lmsError();
-    lmsReady = (lmsTruthy(r) && code === "0") || code === "103";
-  } catch(e){ lmsReady = false; }
-  return lmsReady;
-}
-
-function lmsSet(name, value){
-  if (!API || !lmsReady) return false;
-  try {
-    var r = (API_VERSION === "2004") ? API.SetValue(name, value) : API.LMSSetValue(name, value);
-    return lmsSucceeded(r);
-  } catch(e){ return false; }
-}
-
-function lmsCommit(){
-  if (!API || !lmsReady) return false;
-  try {
-    var r = (API_VERSION === "2004") ? API.Commit("") : API.LMSCommit("");
-    return lmsSucceeded(r);
-  } catch(e){ return false; }
-}
-
-/* Reports completion. EVERY applicable step must succeed: initialisation, the
-   status write, then the commit. Returns false on any failure and latches
-   nothing, so a later press retries. Writing "completed" again is harmless,
-   which is what makes the retry safe when SetValue succeeded but Commit did
-   not. No score. No cmi.success_status. No Terminate, no LMSFinish. */
-function reportCompletionToLms(){
-  if (!ensureLmsReady()) return false;
-  var key = (API_VERSION === "2004") ? "cmi.completion_status" : "cmi.core.lesson_status";
-  if (!lmsSet(key, "completed")) return false;
-  if (!lmsCommit()) return false;
-  return true;
-}
-
-/* Optional one-way relay to the Moodle page. postMessage is fire-and-forget:
-   the absence of an exception proves nothing about delivery, so this never
-   sets lmsConfirmed and is never reported to the learner as saved progress.
-   Skipped entirely when running standalone (window.parent === window) or when
-   moodleOrigin fails strict validation. Never "*". No acknowledgement
-   protocol is assumed, because the parent page does not specify one. */
-function relayToParent(){
-  if (window.parent === window) return false;              /* standalone */
-  if (!isSafeOrigin(CONFIG.moodleOrigin)) return false;    /* never "*" */
-
-  var stateToRelay = lmsConfirmed;
-
-  /* Suppress an identical repeat, but allow one updated message when the
-     state changes from false to true. */
-  if (lastRelayedState === stateToRelay) return false;
-
-  try {
-    window.parent.postMessage({
-      source: "pazapa",
-      activity: "W2L1_STEP3_PRONUNCIATION_CLINIC",
-      event: "completed",
-      scope: "local",              /* the learner finished the visible activity */
-      lmsConfirmed: stateToRelay   /* state at dispatch; not a delivery receipt */
-    }, CONFIG.moodleOrigin);
-    lastRelayedState = stateToRelay;
-    return true;
-  } catch(e){
-    /* Not recorded as relayed, so a later press can try again. */
-    return false;
-  }
-}
-
-/* Called only from the Done button. Latches ONLY on genuine success. */
-function activityCompleted(){
-  if (lmsConfirmed) return true;   /* already latched: never report twice */
-  var ok = reportCompletionToLms();
-  if (ok) lmsConfirmed = true;
-  return ok;
-}
-
-/* Learner-facing wording. Three distinct outcomes, no technical detail, and
-   no warning when the activity is standalone by design. */
-function setDoneStatus(hadLms, saved){
+/* Learner-facing wording. Local completion only, one outcome, no technical
+   detail. The status element is role="status" aria-live="polite", so it
+   announces itself — it must not also go through announce(). */
+function setDoneStatus(){
   var st = document.getElementById("pz-done-status");
   var doneBtn = document.getElementById("pz-done");
-  var msg;
-  var allowRetry = false;
-  if (!hadLms){
-    msg = "Step 3 is complete.";
-  } else if (saved){
-    msg = "Step 3 is complete. Your progress was saved.";
-  } else {
-    msg = "Step 3 is complete. Your progress could not be saved yet. " +
-          "Select Done to try again.";
-    allowRetry = true;
-  }
-  /* The status element is role="status" aria-live="polite", so it announces
-     itself. It must not also go through announce(). */
-  if (st) st.textContent = msg;
-  if (doneBtn) doneBtn.disabled = !allowRetry;
+  if (st) st.textContent = "Step 3 is complete.";
+  if (doneBtn) doneBtn.disabled = true;
 }
 
 function revealNextActivity(){
@@ -2432,20 +1856,13 @@ function init(){
   var done = document.getElementById("pz-done");
   if (done){
     done.addEventListener("click", function(){
-      /* The learner-facing activity always completes, LMS or no LMS, and the
-         local message appears once. The button is never disabled before the
-         reporting outcome is known, so a genuine retry stays possible. */
+      /* The activity always completes locally. No LMS, no Moodle origin and
+         no parent window are required. */
       if (!localComplete){
         localComplete = true;
         revealNextActivity();   /* revealed, never auto-followed */
       }
-      var hadLms = lmsPresent();
-      var saved = lmsConfirmed ? true : activityCompleted();
-      setDoneStatus(hadLms, saved);
-      /* The relay goes LAST, so it carries the final LMS state rather than a
-         stale one. Dispatching it before activityCompleted() meant a first
-         successful completion always relayed lmsConfirmed:false. */
-      relayToParent();
+      setDoneStatus();
     });
   }
 
@@ -2466,7 +1883,6 @@ function init(){
     stopRecognition(); stopActiveRecorder(); clearAllRecordings(); stopAudio();
   });
 
-  ensureLmsReady();
   showScreen(0);
 }
 
@@ -2486,7 +1902,6 @@ window.__PZ__ = {
   PHRASES: PHRASES,
   TOTAL_SCREENS: TOTAL_SCREENS,
   FALLBACK_MSG: FALLBACK_MSG,
-  isSafeOrigin: isSafeOrigin,
   isSafeUrl: isSafeUrl,
   isSafeEndpoint: isSafeEndpoint,
   recordingSupported: recordingSupported,
@@ -2509,19 +1924,14 @@ window.__PZ__ = {
   sanitiseFeedback: sanitiseFeedback,
   focusIsApproved: focusIsApproved,
   speakingEnabled: speakingEnabled,
-  activityCompleted: activityCompleted,
   goForward: goForward,
   goBack: goBack,
   showScreen: showScreen,
   allPhrasesVisited: allPhrasesVisited,
-  lmsTruthy: lmsTruthy,
-  lmsPresent: lmsPresent,
-  reportCompletionToLms: reportCompletionToLms,
   setDoneStatus: setDoneStatus,
   state: function(){
     return { current: current, visited: visited,
-             localComplete: localComplete, lmsConfirmed: lmsConfirmed,
-             lmsReady: lmsReady, lastRelayedState: lastRelayedState };
+             localComplete: localComplete };
   }
 };
 
