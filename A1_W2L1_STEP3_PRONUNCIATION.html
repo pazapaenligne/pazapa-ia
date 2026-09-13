@@ -500,15 +500,40 @@ Commit attempts remain retryable. Local lesson completion remains independent
 of LMS reporting.
 SCORM 1.2 and SCORM 2004 both supported, every call return-checked via
 lmsSucceeded(). No cmi.success_status. No score. No LMSFinish / Terminate.
-No auto-advance anywhere. The optional speaking activity cannot affect
-completion in either direction.
+No auto-advance anywhere.
+
+Pass 14 (this delivery) — Practise speaking is required, on instruction.
+· Speaking practice is no longer optional wherever the feature is actually
+  available on the learner's device: the "Optional" badge, the "You do not
+  need to do this part" / "facultative" wording and the Skip speaking
+  practice button are all removed from the speak panel.
+· A phrase now counts as visited, for the purpose of unlocking the final
+  screen, only once the learner has both opened it AND made a speaking
+  attempt on it (any outcome — match, try again, unclear, or a mic-blocked
+  message all count as an attempt; the requirement is that they tried, not
+  that they got it right).
+· When speech recognition is unsupported by the browser, or the AI feedback
+  endpoint is not configured, the panel does not render at all (unchanged
+  from before) and nothing is required for that phrase — a learner is never
+  blocked by a feature their device cannot offer.
+· The optional record-and-compare panel (Record, Play my voice, Delete) is
+  untouched: it stays exactly as optional as before. Only "Practise
+  speaking" changed.
+
+Pass 15 (this delivery) — Record and compare is also required, on
+instruction. The same treatment as Pass 14: "Optional" badge, "facultatif"
+wording and the Skip recording button are removed; a phrase's recording
+counts as done, for unlocking the final screen, once any attempt has
+concluded (a successful recording, a failed one, or a mic-denied message
+all count — the requirement is that the learner tried). Required only
+where recordingSupported() says the device can actually offer it.
 
 STORAGE / PRIVACY
 --------------------------------------------------------------------------------
 No localStorage, no sessionStorage, no cookies, no analytics, no beacons.
 Only data ever leaving the browser: the approved target phrase and the
 recognised transcript, to CONFIG.feedbackEndpoint, and only when the learner
-chooses to practise speaking. No name, age, location, address, telephone or
+attempts the speaking practice. No name, age, location, address, telephone or
 email is requested anywhere.
 ================================================================================
 -->
@@ -845,6 +870,7 @@ noscript p{
     <button type="button" id="pz-back" class="pz-btn-quiet">Back</button>
     <button type="button" id="pz-fwd" class="pz-btn-primary">Next</button>
   </nav>
+  <p class="pz-status" id="pz-nav-status" role="status" aria-live="polite"></p>
 
   <!-- Single persistent audio element. See AUDIO ARCHITECTURE in the header. -->
   <audio id="pz-audio" preload="none"></audio>
@@ -1272,7 +1298,10 @@ function startRecognition(index, panel){
     var code = (ev && ev.error) ? String(ev.error) : "";
     setSpeakBusy(panel, false);
     if (code === "not-allowed" || code === "service-not-allowed"){
-      showStatus(panel, "The microphone is off. You can carry on without speaking practice.");
+      panel.pzSpeakAttempted = true;
+      showStatus(panel, "The microphone is off. You can carry on.");
+      var afterMic = panelPart(panel, "after-row");
+      if (afterMic) afterMic.hidden = false;
     } else if (code === "no-speech" || code === "aborted"){
       showFeedback(panel, {
         status:"unclear",
@@ -1390,9 +1419,9 @@ function sanitiseFeedback(data, index){
   if (message === "" || message.length > 160) return null;
   /* Reject anything that is not plain sentence text. */
   if (/[<>{}\[\]\\|`~^]|https?:|data:|javascript:/i.test(message)) return null;
-  /* Reject any number, percentage, grade, star, mark, badge or score, whatever
-     the server said. The learner is never shown a measurement. */
-  if (/\d|%|\bscores?\b|\bstars?\b|\bgrades?\b|\blevels?\b|\bpoints?\b|\bmarks?\b|\bbadges?\b/i.test(message)) return null;
+  /* Reject score-like or grading language, but allow ordinary numbers that may
+     legitimately appear in recognised speech (for example "at 7"). */
+  if (/%|\bscores?\b|\bstars?\b|\bgrades?\b|\bcefr\b|\blevels?\b|\bpoints?\b|\bmarks?\b|\bbadges?\b|\b\d+(?:[.,]\d+)?\s*\/\s*\d+\b/i.test(message)) return null;
 
   var focus = (typeof data.focus === "string") ? data.focus.replace(/\s+/g," ").trim() : "";
   if (focus.length > 60) focus = "";
@@ -1508,7 +1537,6 @@ function clearAllRecordings(){
   var panels = document.querySelectorAll(".pz-record");
   for (var i = 0; i < panels.length; i++){
     clearRecording(panels[i]);
-    if (panels[i].pzRecSkipped) continue;   /* leave the skipped note in place */
     var s = panels[i].querySelector(".pz-rec-status");
     if (s) s.textContent = "";
     setRecBusy(panels[i], false);
@@ -1556,6 +1584,7 @@ function startRecording(panel){
     } catch(e){
       releaseStream(stream);
       setRecBusy(panel, false);
+      panel.pzRecAttempted = true;
       showRecStatus(panel, "Recording does not work in this browser. You can carry on.");
       return;
     }
@@ -1571,6 +1600,7 @@ function startRecording(panel){
       if (recStream === stream) recStream = null;
       if (gen !== recGen) return;
       setRecBusy(panel, false);
+      panel.pzRecAttempted = true;
       showRecStatus(panel, "The recording did not work. You can try again or carry on.");
     };
     mr.onstop = function(){
@@ -1582,6 +1612,7 @@ function startRecording(panel){
       if (recPanel === panel) recPanel = null;
       if (gen !== recGen) return;            /* a newer attempt owns the UI */
       setRecBusy(panel, false);
+      panel.pzRecAttempted = true;
       if (!chunks.length){
         showRecStatus(panel, "I did not catch that. You can try again or carry on.");
         return;
@@ -1610,6 +1641,7 @@ function startRecording(panel){
       recorder = null; recStream = null;
       if (gen !== recGen) return;
       setRecBusy(panel, false);
+      panel.pzRecAttempted = true;
       showRecStatus(panel, "Recording does not work in this browser. You can carry on.");
       return;
     }
@@ -1619,8 +1651,9 @@ function startRecording(panel){
   }).catch(function(){
     if (gen !== recGen) return;
     setRecBusy(panel, false);
+    panel.pzRecAttempted = true;
     /* Denied, or no microphone. Calm, and never a blocker. */
-    showRecStatus(panel, "The microphone is off. You can carry on without recording.");
+    showRecStatus(panel, "The microphone is off. You can carry on.");
   });
 }
 
@@ -1637,34 +1670,25 @@ function playOwnRecording(panel, btn){
   playSource(panel.pzRecUrl, recKeyFor(panel), btn);
 }
 
-function skipRecording(panel){
-  clearRecording(panel);
-  panel.pzRecSkipped = true;
-  var row = recPart(panel, "rec-main");
-  if (row) row.hidden = true;
-  showRecStatus(panel, "Recording is skipped. You can carry on.");
-}
-
 function buildRecordPanel(index, p){
   var panel = el("div", "pz-record");
   panel.id = "pz-record-" + (index + 1);
 
-  panel.appendChild(el("span", "pz-optional", "Optional"));
   panel.appendChild(el("h2", null, "Record and compare"));
   panel.appendChild(el("p", null,
-    "You can record the sentence. Then you listen to your voice. Then you " +
+    "Record the sentence. Then you listen to your voice. Then you " +
     "listen to the model. You hear the difference yourself."));
   var fr = el("p", "pz-fr",
-    "Vous pouvez enregistrer la phrase, écouter votre voix, puis écouter le " +
+    "Enregistrez la phrase, écoutez votre voix, puis écoutez le " +
     "modèle. Vous entendez la différence vous-même.");
   fr.setAttribute("lang", "fr");
   panel.appendChild(fr);
 
   panel.appendChild(el("p", "pz-privacy",
-    "Recording is optional. Your recording stays in this browser. It is not " +
+    "Your recording stays in this browser. It is not " +
     "sent anywhere, and it is deleted when you leave this sentence."));
   var frp = el("p", "pz-fr",
-    "L’enregistrement est facultatif. Votre enregistrement reste dans ce " +
+    "Votre enregistrement reste dans ce " +
     "navigateur. Il n’est pas envoyé, et il est supprimé quand vous quittez " +
     "cette phrase.");
   frp.setAttribute("lang", "fr");
@@ -1680,12 +1704,6 @@ function buildRecordPanel(index, p){
   rec.setAttribute("aria-label", "Record yourself saying: " + p.text);
   rec.addEventListener("click", function(){ toggleRecording(panel); });
   main.appendChild(rec);
-
-  var skip = el("button", "pz-btn-quiet", "Skip recording");
-  skip.type = "button";
-  skip.setAttribute("data-role", "rec-skip");
-  skip.addEventListener("click", function(){ skipRecording(panel); });
-  main.appendChild(skip);
 
   panel.appendChild(main);
 
@@ -1835,7 +1853,7 @@ function buildPhraseScreen(index){
     sec.appendChild(buildRecordPanel(index, p));
   }
 
-  /* ---- optional speaking practice (needs the AI endpoint) ---- */
+  /* ---- speaking practice, required when the AI endpoint is available ---- */
   if (speakingEnabled()){
     sec.appendChild(buildSpeakPanel(index, p));
   }
@@ -1847,20 +1865,18 @@ function buildSpeakPanel(index, p){
   var panel = el("div", "pz-speak");
   panel.id = "pz-speak-" + (index + 1);
 
-  panel.appendChild(el("span", "pz-optional", "Optional"));
   panel.appendChild(el("h2", null, "Practise speaking"));
   panel.appendChild(el("p", null,
-    "You can say the sentence once. The computer shows your words. You do not " +
-    "need to do this part."));
+    "Say the sentence once. The computer shows your words. Do this before you " +
+    "carry on."));
   var fr = el("p", "pz-fr",
-    "Vous pouvez dire la phrase une fois. L’ordinateur affiche vos mots. " +
-    "Cette partie est facultative.");
+    "Dites la phrase une fois. L’ordinateur affiche vos mots. Faites cette " +
+    "partie avant de continuer.");
   fr.setAttribute("lang", "fr");
   panel.appendChild(fr);
 
   panel.appendChild(el("p", "pz-privacy",
-    "Speaking practice is optional. This activity does not save your recognised " +
-    "words or an audio recording."));
+    "This activity does not save your recognised words or an audio recording."));
 
   /* main action row */
   var row = el("div", "pz-btnrow");
@@ -1872,12 +1888,6 @@ function buildSpeakPanel(index, p){
   speak.setAttribute("aria-label", "Practise speaking: " + p.text);
   speak.addEventListener("click", function(){ startRecognition(index, panel); });
   row.appendChild(speak);
-
-  var skip = el("button", "pz-btn-quiet", "Skip speaking practice");
-  skip.type = "button";
-  skip.setAttribute("data-role", "skip");
-  skip.addEventListener("click", function(){ skipSpeaking(panel); });
-  row.appendChild(skip);
 
   panel.appendChild(row);
 
@@ -1958,6 +1968,7 @@ function showHeard(panel, text){
 }
 
 function showFeedback(panel, fb, heardText){
+  panel.pzSpeakAttempted = true;
   var out = panelPart(panel, "out");
   if (!out) return;
   if (heardText) showHeard(panel, heardText);
@@ -1989,6 +2000,7 @@ function showFeedback(panel, fb, heardText){
 }
 
 function showFallback(panel, heardText){
+  panel.pzSpeakAttempted = true;
   var out = panelPart(panel, "out");
   if (!out) return;
   if (heardText) showHeard(panel, heardText);
@@ -2009,13 +2021,12 @@ function showFallback(panel, heardText){
 /* Clears every speaking panel the learner has moved away from. Invalidating
    the request is not enough on its own: the transcript is painted as soon as
    it is recognised, so it would otherwise still be on screen when the learner
-   came back. A panel the learner has explicitly skipped is left as it is, so
-   its "skipped" note is not wiped out from under them. */
+   came back. This never touches panel.pzSpeakAttempted, so returning to an
+   already-attempted phrase does not make it count as un-attempted again. */
 function resetAllPanels(){
   var panels = document.querySelectorAll(".pz-speak");
   for (var i = 0; i < panels.length; i++){
     var pn = panels[i];
-    if (pn.pzSkipped) continue;
     var out = panelPart(pn, "out");
     if (out){ while (out.firstChild) out.removeChild(out.firstChild); }
     var after = panelPart(pn, "after-row");
@@ -2033,18 +2044,6 @@ function clearAttempt(panel){
   if (out){ while (out.firstChild) out.removeChild(out.firstChild); }
   var after = panelPart(panel, "after-row");
   if (after) after.hidden = true;
-}
-
-function skipSpeaking(panel){
-  clearAttempt(panel);
-  panel.pzSkipped = true;
-  var row = panelPart(panel, "main-row");
-  if (row) row.hidden = true;
-  var out = panelPart(panel, "out");
-  if (out){
-    out.appendChild(el("p", "pz-status",
-      "Speaking practice is skipped. You can carry on."));
-  }
 }
 
 /* ============================================================================
@@ -2088,17 +2087,96 @@ function showScreen(i){
   try { window.scrollTo(0, 0); } catch(e){}
 }
 
+/* A phrase's speaking practice is required only where it could actually be
+   offered: speakingEnabled() is the browser + CONFIG.feedbackEndpoint check,
+   and the panel itself may be absent for a phrase built before that check
+   passed. Neither case blocks the learner — there is nothing to require. */
+function speakingDoneForPhrase(i){
+  if (!speakingEnabled()) return true;
+  var panel = document.getElementById("pz-speak-" + (i + 1));
+  if (!panel) return true;
+  return !!panel.pzSpeakAttempted;
+}
+
+/* Same rule for Record and compare: required only where recordingSupported()
+   says the browser can actually offer it. A device with no microphone
+   support, or one where the panel could not be built, is never blocked on
+   an action it cannot perform. */
+function recordingDoneForPhrase(i){
+  if (!recordingSupported()) return true;
+  var panel = document.getElementById("pz-record-" + (i + 1));
+  if (!panel) return true;
+  return !!panel.pzRecAttempted;
+}
+
 function allPhrasesVisited(){
-  for (var i = 0; i < PHRASES.length; i++){ if (!visited[i]) return false; }
+  for (var i = 0; i < PHRASES.length; i++){
+    if (!visited[i]) return false;
+    if (!speakingDoneForPhrase(i)) return false;
+    if (!recordingDoneForPhrase(i)) return false;
+  }
   return true;
 }
 
+/* Builds one line per phrase still missing a required action, e.g.
+   "Sentence 3: do Practise speaking." A phrase can be missing both, in
+   which case it gets one combined line. Used only to explain a blocked
+   Finish/Next — it changes nothing about what is required. */
+function missingRequirementsMessage(){
+  var lines = [];
+  for (var i = 0; i < PHRASES.length; i++){
+    var needSpeak = !speakingDoneForPhrase(i);
+    var needRec = !recordingDoneForPhrase(i);
+    if (!needSpeak && !needRec) continue;
+    var what;
+    if (needSpeak && needRec) what = "Practise speaking and Record and compare";
+    else if (needSpeak) what = "Practise speaking";
+    else what = "Record and compare";
+    lines.push("Sentence " + (i + 1) + ": do " + what + ".");
+  }
+  return lines.join(" ");
+}
+
+/* One line describing what is still missing on a single phrase screen,
+   e.g. "You need to do Practise speaking before you can continue." Used
+   when leaving that screen is blocked. */
+function missingRequirementsForPhrase(i){
+  var needSpeak = !speakingDoneForPhrase(i);
+  var needRec = !recordingDoneForPhrase(i);
+  if (!needSpeak && !needRec) return "";
+  var what;
+  if (needSpeak && needRec) what = "Practise speaking and Record and compare";
+  else if (needSpeak) what = "Practise speaking";
+  else what = "Record and compare";
+  return "You need to do " + what + " before you can continue.";
+}
+
+function setNavStatus(text){
+  var el = document.getElementById("pz-nav-status");
+  if (el) el.textContent = text || "";
+}
+
+/* Leaving a phrase screen — forward OR to the final screen — is blocked
+   until that phrase's required activities are done. This stops a learner
+   clicking through every phrase first and only finding out what is
+   missing when they reach Finish. */
 function goForward(){
   var next = current + 1;
-  if (next === screens.length - 1 && !allPhrasesVisited()) return;
+  if (current >= 1 && current <= PHRASES.length){
+    var msg = missingRequirementsForPhrase(current - 1);
+    if (msg){
+      setNavStatus(msg);
+      return;
+    }
+  }
+  if (next === screens.length - 1 && !allPhrasesVisited()){
+    setNavStatus("You cannot finish yet. " + missingRequirementsMessage());
+    return;
+  }
+  setNavStatus("");
   showScreen(next);
 }
-function goBack(){ showScreen(current - 1); }
+function goBack(){ setNavStatus(""); showScreen(current - 1); }
 
 /* ============================================================================
    SCORM — 1.2 and 2004, completion once, return-checked
@@ -2422,7 +2500,7 @@ window.__PZ__ = {
                  hasUrl: !!panels[i].pzRecUrl,
                  url: panels[i].pzRecUrl || null,
                  recording: !!panels[i].pzRecording,
-                 skipped: !!panels[i].pzRecSkipped });
+                 attempted: !!panels[i].pzRecAttempted });
     }
     return { panels: out, liveStream: !!recStream, liveRecorder: !!recorder,
              gen: recGen, busyKey: audioBusyKey };
