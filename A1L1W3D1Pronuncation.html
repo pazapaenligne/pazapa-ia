@@ -714,13 +714,11 @@
   }
 
   document.getElementById("btn-start").addEventListener("click", function(){
-    hasLearnerNavigated = true;
     showScreen("screen-words");
   });
 
   document.querySelectorAll(".btn-carry").forEach(function(btn){
     btn.addEventListener("click", function(){
-      hasLearnerNavigated = true;
       showScreen(btn.getAttribute("data-next"));
     });
   });
@@ -1370,8 +1368,6 @@
     btnFinish.removeAttribute("aria-pressed");
     localAttemptCompleted = false;
     mainRecordingAttempted = false;
-
-    hasLearnerNavigated = true;
     showScreen("screen-welcome");
   });
 
