@@ -299,53 +299,6 @@
     color:var(--dark-blue);
     margin-bottom:20px;
   }
-
-  @media (max-width:600px){
-    .wrap{
-      max-width:100%;
-      padding:18px 14px 48px;
-    }
-    .word-grid{
-      grid-template-columns:1fr;
-      gap:16px;
-    }
-    .word-card{
-      width:100%;
-      padding:16px;
-    }
-    .fig-img{
-      width:96px;
-      height:96px;
-    }
-    .word-label{
-      font-size:1.1rem;
-    }
-    .btn-listen{
-      width:100%;
-      justify-content:center;
-      padding:12px 16px;
-    }
-    .practice-controls{
-      justify-content:center;
-      gap:10px;
-    }
-    .btn-mic{
-      min-width:56px;
-      min-height:56px;
-      padding:10px 14px;
-      font-size:1.15rem;
-    }
-    .practice-feedback{
-      font-size:0.95rem;
-      line-height:1.45;
-      margin-top:10px;
-    }
-    .btn-row button{
-      flex:1 1 100%;
-      width:100%;
-    }
-  }
-
 </style>
 </head>
 <body>
@@ -364,6 +317,8 @@
     <h1 id="main-heading">Pronunciation Clinic</h1>
     <p class="lead">Listen, practise and improve.</p>
     <p class="instruction">Topic: talking about family. Take your time. There is no time limit.</p>
+    <div class="privacy-note" role="note" aria-label="Device recommendation"><strong>Please note:</strong> To receive AI feedback, you must complete this exercise on a computer, as the AI feedback feature may not work on all mobile devices.</div>
+
     <div class="btn-row">
       <button class="btn-primary" id="btn-start" aria-label="Start the Pronunciation Clinic">Start</button>
     </div>
@@ -373,7 +328,7 @@
   <section class="screen" id="screen-words" tabindex="-1">
     <h2>Listen to key words</h2>
     <p class="instruction">Press Listen. Hear each word. You can listen as many times as you like.</p>
-    <p class="placeholder-note">Your Record and compare audio stays in this browser. When you use the speaking check, a short voice sample is sent securely for transcription. This activity does not save that voice sample.</p>
+    <p class="placeholder-note">Your practice recording is not uploaded by this activity. Automatic word recognition depends on your browser and may use the browser provider's speech service.</p>
 
     <div class="word-grid">
       <div class="word-card">
@@ -599,7 +554,6 @@
   --------------------------------------------------------- */
   var CONFIG = {
     feedbackEndpoint: "https://pazapa-ia.netlify.app/.netlify/functions/pronunciation-feedback",
-    transcriptionEndpoint: "https://pazapa-ia.netlify.app/.netlify/functions/transcribe",
     feedbackTimeoutMs: 10000,
     recognitionTimeoutMs: 12000
   };
@@ -626,50 +580,6 @@
     if(!message) return null;
     if(/%|\bscores?\b|\bstars?\b|\bgrades?\b|\bcefr\b|\blevels?\b|\bpoints?\b|\bmarks?\b|\bbadges?\b|\b\d+(?:[.,]\d+)?\s*\/\s*\d+\b/i.test(message)) return null;
     return { status: status, message: message, focus: focus };
-  }
-
-
-  function blobToBase64(blob){
-    return new Promise(function(resolve, reject){
-      var reader = new FileReader();
-      reader.onloadend = function(){
-        var result = String(reader.result || "");
-        var comma = result.indexOf(",");
-        resolve(comma >= 0 ? result.slice(comma + 1) : result);
-      };
-      reader.onerror = function(){ reject(reader.error || new Error("Could not read recording")); };
-      reader.readAsDataURL(blob);
-    });
-  }
-
-  function requestTranscription(audioBlob){
-    if(!isSafeEndpoint(CONFIG.transcriptionEndpoint)){
-      return Promise.reject(new Error("transcription endpoint unavailable"));
-    }
-
-    return blobToBase64(audioBlob).then(function(audioBase64){
-      var controller = new AbortController();
-      var timer = setTimeout(function(){ controller.abort(); }, 20000);
-
-      return fetch(CONFIG.transcriptionEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          audioBase64: audioBase64,
-          mimeType: audioBlob.type || "audio/webm"
-        }),
-        signal: controller.signal
-      }).then(function(res){
-        if(!res.ok) throw new Error("transcription request failed");
-        return res.json();
-      }).then(function(data){
-        var recognisedText = String((data && data.text) || "").trim();
-        if(!recognisedText) throw new Error("empty transcription");
-        return recognisedText;
-      }).finally(function(){
-        clearTimeout(timer);
-      });
-    });
   }
 
   function requestAiFeedback(targetPhrase, recognisedText){
@@ -1130,6 +1040,8 @@
      Falls back to a plain self-check where speech recognition
      isn't supported (e.g. iOS Safari, Firefox).
   --------------------------------------------------------- */
+  var SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+
   function normaliseSpeech(text){
     return text.toLowerCase().replace(/[^a-z\s]/g, "").trim();
   }
@@ -1148,9 +1060,9 @@
 
     container.innerHTML =
       '<div class="practice-controls">' +
-        '<button type="button" class="btn-mic" data-role="record" aria-label="Start speaking practice for ' + word + '">🎤</button>' +
-        '<button type="button" class="btn-mic" data-role="stop" disabled aria-label="Stop speaking practice for ' + word + '">⏹</button>' +
-        '<button type="button" class="btn-mic" data-role="play" disabled aria-label="Listen to your recording of ' + word + '">▶</button>' +
+        '<button type="button" class="btn-mic" data-role="record" aria-label="Record yourself saying ' + word + '">\u{1F3A4}</button>' +
+        '<button type="button" class="btn-mic" data-role="stop" disabled aria-label="Stop recording ' + word + '">\u23F9</button>' +
+        '<button type="button" class="btn-mic" data-role="play" disabled aria-label="Listen to your recording of ' + word + '">\u25B6</button>' +
       '</div>' +
       '<p class="practice-feedback" role="status" aria-live="polite"></p>';
 
@@ -1163,8 +1075,9 @@
     var localChunks = [];
     var localBlobUrl = null;
     var localStream = null;
+    var recognition = null;
+    var recognitionGaveResult = false;
     var localRequestPending = false;
-    var attemptToken = 0;
 
     function resetButtons(){
       recordBtn.disabled = false;
@@ -1179,41 +1092,12 @@
       }
     }
 
-    function finishAndCheck(blob, token){
-      if(!blob || !blob.size){
-        feedback.textContent = "No voice was recorded. Please try again.";
-        resetButtons();
-        return;
-      }
-
-      feedback.textContent = "Checking your words…";
-      requestTranscription(blob).then(function(recognisedText){
-        if(token !== attemptToken) return null;
-        return requestAiFeedback(word, recognisedText).then(function(ai){
-          if(token !== attemptToken) return;
-          feedback.textContent = ai.message;
-        }).catch(function(){
-          if(token !== attemptToken) return;
-          var heard = normaliseSpeech(recognisedText);
-          var target = normaliseSpeech(word);
-          if(heard === target || heard.indexOf(target) !== -1){
-            feedback.textContent = "We recognised “" + word + "”. Listen to your recording and compare it with the model.";
-          }else{
-            feedback.textContent = "Good try. Listen to the model and say “" + word + "” once more.";
-          }
-        });
-      }).catch(function(){
-        if(token !== attemptToken) return;
-        feedback.textContent = "Voice check is unavailable right now. Listen to your recording and compare with the model.";
-      }).finally(function(){
-        if(token === attemptToken) resetButtons();
-      });
-    }
-
     activeRecordingStoppers.push(function(){
-      attemptToken++;
       if(localRecorder && localRecorder.state !== "inactive"){
-        try{ localRecorder.stop(); }catch(e){}
+        localRecorder.stop();
+      }
+      if(recognition){
+        try{ recognition.stop(); }catch(e){ /* already stopped */ }
       }
       stopLocalStream();
       localRequestPending = false;
@@ -1228,8 +1112,7 @@
     });
 
     recordBtn.addEventListener("click", function(){
-      if(localRequestPending) return;
-
+      if(localRequestPending) return; // rapid repeated taps must not open several mic streams
       if(!window.isSecureContext){
         feedback.textContent = "Recording needs a secure (https) page.";
         return;
@@ -1246,20 +1129,13 @@
         return;
       }
 
-      attemptToken++;
-      var token = attemptToken;
       localRequestPending = true;
       recordBtn.disabled = true;
       recordBtn.classList.add("is-recording");
-      playBtn.disabled = true;
-      feedback.textContent = "Listening… say “" + word + "”, then press Stop.";
+      recognitionGaveResult = false;
+      feedback.textContent = "Listening\u2026 say \u201C" + word + "\u201D.";
 
       navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
-        if(token !== attemptToken){
-          stream.getTracks().forEach(function(t){ t.stop(); });
-          return;
-        }
-
         localRequestPending = false;
         localStream = stream;
         localChunks = [];
@@ -1271,6 +1147,7 @@
             : new MediaRecorder(stream);
         }catch(err){
           feedback.textContent = "This browser could not start recording.";
+          localRequestPending = false;
           resetButtons();
           stopLocalStream();
           return;
@@ -1281,30 +1158,105 @@
         };
 
         localRecorder.onerror = function(){
-          if(token !== attemptToken) return;
           feedback.textContent = "Recording stopped because of a device error. Try again.";
           resetButtons();
           stopLocalStream();
         };
 
         localRecorder.onstop = function(){
-          if(token !== attemptToken) return;
-
           var blobType = localRecorder.mimeType || mime || "audio/webm";
           var blob = new Blob(localChunks, { type: blobType });
-
           if(localBlobUrl) URL.revokeObjectURL(localBlobUrl);
           localBlobUrl = URL.createObjectURL(blob);
           playBtn.disabled = false;
           stopLocalStream();
-
-          finishAndCheck(blob, token);
         };
 
         localRecorder.start(250);
         stopBtn.disabled = false;
+
+        // Run browser speech recognition alongside the local recording.
+        // Only recognised TEXT and the approved target word may be sent
+        // to the configured feedback endpoint; learner audio stays local.
+        if(SpeechRecognitionCtor){
+          try{
+            recognition = new SpeechRecognitionCtor();
+            recognition.lang = "en-GB";
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 3;
+
+            
+            var recognitionSettled = false;
+            var recognitionTimer = setTimeout(function(){
+              if(recognitionSettled) return;
+              recognitionSettled = true;
+              try{ recognition.abort(); }catch(e){}
+              feedback.textContent = "Speaking practice did not respond in this browser. You can try again or carry on.";
+              resetButtons();
+            }, CONFIG.recognitionTimeoutMs);
+
+            function clearRecognitionTimer(){
+              if(recognitionTimer){
+                clearTimeout(recognitionTimer);
+                recognitionTimer = null;
+              }
+            }
+
+            recognition.onresult = function(event){
+              if(recognitionSettled) return;
+              recognitionSettled = true;
+              clearRecognitionTimer();
+              recognitionGaveResult = true;
+
+              var alts = event.results[0];
+              var transcripts = [];
+              for(var i = 0; i < alts.length; i++){
+                transcripts.push(alts[i].transcript);
+              }
+              var recognisedText = transcripts.length ? transcripts[0] : "";
+
+              if(!recognisedText){
+                feedback.textContent = "The words were not clear enough to compare. Listen and try again, or carry on.";
+                return;
+              }
+
+              feedback.textContent = "Checking your words…";
+              requestAiFeedback(word, recognisedText).then(function(ai){
+                feedback.textContent = ai.message;
+              }).catch(function(){
+                if(wordWasHeard(transcripts, word)){
+                  feedback.textContent = "We recognised “" + word + "”. Listen to your recording and compare it with the model.";
+                } else {
+                  feedback.textContent = "I could not compare the words this time. Listen and try again, or carry on.";
+                }
+              });
+            };
+
+            recognition.onerror = function(){
+              if(recognitionSettled) return;
+              recognitionSettled = true;
+              clearRecognitionTimer();
+              if(!recognitionGaveResult){
+                feedback.textContent = "Automatic word recognition is unavailable. Listen to your recording and compare it with the model.";
+              }
+              resetButtons();
+            };
+
+            recognition.onend = function(){
+              clearRecognitionTimer();
+              if(!recognitionSettled && !recognitionGaveResult){
+                recognitionSettled = true;
+                feedback.textContent = "I could not compare the words this time. Listen and try again, or carry on.";
+                resetButtons();
+              }
+            };
+
+            recognition.start();
+          }catch(e){
+            recognition = null;
+          }
+        }
       }).catch(function(err){
-        if(token !== attemptToken) return;
         localRequestPending = false;
         resetButtons();
         feedback.textContent = microphoneErrorMessage(err, embedContext);
@@ -1314,13 +1266,14 @@
 
     stopBtn.addEventListener("click", function(){
       if(localRecorder && localRecorder.state !== "inactive"){
-        stopBtn.disabled = true;
-        feedback.textContent = "Preparing your voice check…";
-        try{ localRecorder.stop(); }catch(e){
-          feedback.textContent = "Could not stop the recording. Please try again.";
-          resetButtons();
-          stopLocalStream();
-        }
+        localRecorder.stop();
+      }
+      if(recognition){
+        try{ recognition.stop(); }catch(e){ /* already stopped */ }
+      }
+      resetButtons();
+      if(!SpeechRecognitionCtor){
+        feedback.textContent = "Automatic word recognition is unavailable. Listen to your recording and compare it with the model.";
       }
     });
 
