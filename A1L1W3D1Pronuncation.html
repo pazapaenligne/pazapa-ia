@@ -311,6 +311,7 @@
 
   <!-- Live region for feedback / audio placeholder announcements -->
   <div id="live-region" class="sr-only" aria-live="polite"></div>
+  <audio id="pz-audio" preload="auto" playsinline></audio>
 
   <!-- SCREEN 1: WELCOME -->
   <section class="screen active" id="screen-welcome" tabindex="-1">
@@ -609,23 +610,31 @@
   }
 
   var currentAudio = null;
+  var modelAudio = document.getElementById("pz-audio");
   var activeRecordingStoppers = [];
   var liveRegion = document.getElementById("live-region");
 
-  // One central playback engine for every official recording, per the
-  // Pazapa Global Audio Standard: only one sound plays at a time, replay
-  // always restarts the exact same source, and technical errors are
-  // logged to the console only (never shown to the learner).
+  // One persistent playback element for all official Pazapa model audio.
+  // This is more reliable in Chrome/Moodle than creating a new Audio()
+  // object for every Listen tap.
   function stopAudio(){
     if(currentAudio){
       try{
         currentAudio.pause();
         currentAudio.currentTime = 0;
-      }catch(e){ /* already stopped */ }
+      }catch(e){}
       currentAudio = null;
     }
+
+    if(modelAudio){
+      try{
+        modelAudio.pause();
+        modelAudio.currentTime = 0;
+      }catch(e){}
+    }
+
     if(window.speechSynthesis){
-      try{ window.speechSynthesis.cancel(); }catch(e){ /* not available */ }
+      try{ window.speechSynthesis.cancel(); }catch(e){}
     }
   }
 
@@ -634,24 +643,37 @@
       console.error("Missing audio source.");
       return;
     }
+    if(!modelAudio){
+      console.error("Persistent audio element #pz-audio is missing.");
+      return;
+    }
+
     stopAudio();
-    var audio = new Audio();
-    audio.preload = "auto";
-    audio.src = src;
-    currentAudio = audio;
-    audio.addEventListener("ended", function(){
-      if(currentAudio === audio) currentAudio = null;
-    });
-    audio.addEventListener("error", function(){
-      console.error("Audio loading error:", audio.error ? audio.error.code : "unknown");
-    });
-    var playPromise = audio.play();
-    if(playPromise && typeof playPromise.catch === "function"){
-      playPromise.catch(function(error){
-        console.error("Audio playback failed:", error);
-      });
+
+    try{
+      modelAudio.src = src;
+      modelAudio.currentTime = 0;
+      modelAudio.load();
+      currentAudio = modelAudio;
+
+      var playPromise = modelAudio.play();
+      if(playPromise && typeof playPromise.catch === "function"){
+        playPromise.catch(function(error){
+          console.error("Audio playback failed:", error);
+        });
+      }
+    }catch(error){
+      console.error("Audio playback failed:", error);
     }
   }
+
+  modelAudio.addEventListener("ended", function(){
+    if(currentAudio === modelAudio) currentAudio = null;
+  });
+
+  modelAudio.addEventListener("error", function(){
+    console.error("Audio loading error:", modelAudio.error ? modelAudio.error.code : "unknown");
+  });
 
   document.querySelectorAll(".btn-listen").forEach(function(btn){
     btn.addEventListener("click", function(){
