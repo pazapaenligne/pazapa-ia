@@ -609,81 +609,96 @@
     });
   }
 
+  /* ---------------------------------------------------------
+     AUDIO — restored from the validated master architecture:
+     one persistent element, one source at a time, never autoplayed.
+  --------------------------------------------------------- */
+  var audioEl = document.getElementById("pz-audio");
   var currentAudio = null;
-  var modelAudio = document.getElementById("pz-audio");
+  var audioBusyKey = null;
+  var audioToken = 0;
   var activeRecordingStoppers = [];
   var liveRegion = document.getElementById("live-region");
 
-  // One persistent playback element for all official Pazapa model audio.
-  // This is more reliable in Chrome/Moodle than creating a new Audio()
-  // object for every Listen tap.
   function stopAudio(){
-    if(currentAudio){
-      try{
-        currentAudio.pause();
-        currentAudio.currentTime = 0;
-      }catch(e){}
-      currentAudio = null;
-    }
-
-    if(modelAudio){
-      try{
-        modelAudio.pause();
-        modelAudio.currentTime = 0;
-      }catch(e){}
-    }
-
-    if(window.speechSynthesis){
-      try{ window.speechSynthesis.cancel(); }catch(e){}
-    }
+    audioToken++;
+    if(!audioEl) return;
+    try{ audioEl.pause(); }catch(e){}
+    try{
+      if(audioEl.readyState > 0) audioEl.currentTime = 0;
+    }catch(e){}
+    currentAudio = null;
+    audioBusyKey = null;
   }
 
-  function playAudio(src){
-    if(!src){
-      console.error("Missing audio source.");
-      return;
-    }
-    if(!modelAudio){
-      console.error("Persistent audio element #pz-audio is missing.");
+  function playSource(src, busyKey){
+    if(!audioEl || !src) return;
+
+    // Re-tapping the same Listen button stops the clip.
+    if(audioBusyKey === busyKey){
+      stopAudio();
       return;
     }
 
     stopAudio();
 
-    try{
-      modelAudio.src = src;
-      modelAudio.currentTime = 0;
-      modelAudio.load();
-      currentAudio = modelAudio;
+    var token = ++audioToken;
+    audioBusyKey = busyKey;
+    currentAudio = audioEl;
 
-      var playPromise = modelAudio.play();
-      if(playPromise && typeof playPromise.catch === "function"){
-        playPromise.catch(function(error){
+    try{
+      // Keep the same source loaded when replaying it; otherwise set it once.
+      if(audioEl.getAttribute("src") !== src){
+        audioEl.src = src;
+      }else{
+        try{
+          if(audioEl.readyState > 0) audioEl.currentTime = 0;
+        }catch(e2){}
+      }
+
+      var p = audioEl.play();
+      if(p && typeof p.catch === "function"){
+        p.catch(function(error){
+          if(token !== audioToken) return;
           console.error("Audio playback failed:", error);
+          currentAudio = null;
+          audioBusyKey = null;
         });
       }
     }catch(error){
+      if(token !== audioToken) return;
       console.error("Audio playback failed:", error);
+      currentAudio = null;
+      audioBusyKey = null;
     }
   }
 
-  modelAudio.addEventListener("ended", function(){
-    if(currentAudio === modelAudio) currentAudio = null;
-  });
+  function playAudioByKey(key){
+    var src = AUDIO_FILES[key];
+    if(!src){
+      console.error("MISSING AUDIO FILE mapping for key:", key);
+      return;
+    }
+    playSource(src, key);
+  }
 
-  modelAudio.addEventListener("error", function(){
-    console.error("Audio loading error:", modelAudio.error ? modelAudio.error.code : "unknown");
-  });
+  if(audioEl){
+    audioEl.addEventListener("ended", function(){
+      currentAudio = null;
+      audioBusyKey = null;
+    });
+
+    audioEl.addEventListener("error", function(){
+      if(!audioEl.getAttribute("src")) return;
+      console.error("Audio loading error:", audioEl.error ? audioEl.error.code : "unknown");
+      currentAudio = null;
+      audioBusyKey = null;
+    });
+  }
 
   document.querySelectorAll(".btn-listen").forEach(function(btn){
     btn.addEventListener("click", function(){
-      var key = btn.getAttribute("data-audio");
-      var src = AUDIO_FILES[key];
-      if(!src){
-        console.error("MISSING AUDIO FILE mapping for key:", key);
-        return;
-      }
-      playAudio(src);
+      playAudioByKey(btn.getAttribute("data-audio"));
     });
   });
 
