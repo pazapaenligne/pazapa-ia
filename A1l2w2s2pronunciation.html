@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Pazapa English for Adults — W2L2 Step 3: Pronunciation Clinic</title>
+<style>
+  :root{
+    --blue:#36BBD6;
+    --dark-blue:#1B7E92;
+    --green:#C9D646;
+    --yellow:#FCC104;
+    --red:#E6352B;
+    --light-grey:#EBEBEB;
+    --dark-grey:#2E2E2D;
+    --white:#FFFFFF;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;
+    font-family:'Filson Soft','Open Sans',Arial,sans-serif;
+    background:var(--white);
+    color:var(--dark-grey);
+    touch-action:manipulation;
+  }
+  body{
+    font-family:'Open Sans',Arial,sans-serif;
+    line-height:1.5;
+    padding:0 0 40px 0;
+  }
+  header.topbar{
+    background:var(--blue);
+    height:14px;
+    width:100%;
+  }
+  .wrap{
+    max-width:640px;
+    margin:0 auto;
+    padding:24px 20px 60px;
+  }
+  .brandline{
+    font-size:13px;
+    letter-spacing:0.06em;
+    color:var(--dark-blue);
+    font-weight:700;
+    margin-bottom:6px;
+  }
+  .brand-logo{
+    display:block;
+    height:40px;
+    width:auto;
+    margin:0 0 10px 0;
+  }
+  .brand-logo-wrap{
+    margin-bottom:4px;
+  }
+  h1{
+    font-family:'Filson Soft','Open Sans',Arial,sans-serif;
+    color:var(--dark-blue);
+    font-size:1.6rem;
+    margin:0 0 4px 0;
+  }
+  h2{
+    color:var(--dark-blue);
+    font-size:1.2rem;
+    margin:0 0 16px 0;
+  }
+  p.lead{
+    font-size:1.05rem;
+    margin:0 0 20px 0;
+  }
+  .screen{
+    display:none;
+    animation: fadein 0.3s ease-in;
+  }
+  .screen.active{
+    display:block;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .screen{animation:none;}
+  }
+  @keyframes fadein{
+    from{opacity:0;}
+    to{opacity:1;}
+  }
+  .card{
+    background:var(--light-grey);
+    border-radius:14px;
+    padding:18px;
+    margin-bottom:14px;
+  }
+  .word-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+    margin-bottom:20px;
+  }
+  .word-card{
+    background:var(--light-grey);
+    border-radius:14px;
+    padding:14px;
+    text-align:center;
+  }
+  .word-card.neutral{
+    background:#F4F4F4;
+    border:2px dashed #C9C9C9;
+  }
+  .fig{
+    width:64px;
+    height:64px;
+    margin:0 auto 8px;
+    display:block;
+  }
+  .fig-img{
+    width:84px;
+    height:84px;
+    object-fit:cover;
+    object-position:top center;
+    border-radius:12px;
+    margin:0 auto 8px;
+    display:block;
+  }
+  .word-label{
+    font-weight:700;
+    color:var(--dark-grey);
+    margin:6px 0 10px;
+    font-size:1.05rem;
+  }
+  .chunk-label{
+    font-size:1.15rem;
+    letter-spacing:0.02em;
+    color:var(--dark-blue);
+    font-weight:700;
+  }
+  .chunk-hl{
+    background:var(--yellow);
+    padding:0 3px;
+    border-radius:4px;
+  }
+  button{
+    font-family:inherit;
+    font-size:1rem;
+    cursor:pointer;
+    border:none;
+    border-radius:10px;
+    min-height:48px;
+    min-width:48px;
+    padding:10px 18px;
+  }
+  button:focus-visible, a:focus-visible, [tabindex]:focus-visible{
+    outline:3px solid var(--dark-blue);
+    outline-offset:2px;
+  }
+  .btn-primary{
+    background:var(--dark-blue);
+    color:var(--white);
+    font-weight:700;
+  }
+  .btn-primary:hover{background:#166173;}
+  .btn-primary:disabled{
+    background:#9FB7BD;
+    cursor:not-allowed;
+  }
+  .btn-secondary{
+    background:var(--white);
+    color:var(--dark-blue);
+    border:2px solid var(--dark-blue);
+    font-weight:700;
+  }
+  .btn-listen{
+    background:var(--blue);
+    color:var(--white);
+    font-weight:700;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+  }
+  .btn-listen:hover{background:#2ba3bb;}
+  .word-practice{
+    margin-top:10px;
+    padding-top:10px;
+    border-top:1px solid #dcdcdb;
+  }
+  .practice-controls{
+    display:flex;
+    justify-content:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .btn-mic{
+    background:var(--white);
+    color:var(--dark-blue);
+    border:2px solid var(--dark-blue);
+    font-weight:700;
+    min-width:48px;
+    min-height:48px;
+    padding:8px 12px;
+    font-size:1.1rem;
+  }
+  .btn-mic:disabled{
+    opacity:0.45;
+    cursor:not-allowed;
+  }
+  .btn-mic.is-recording{
+    background:var(--red);
+    border-color:var(--red);
+    color:var(--white);
+  }
+  .practice-feedback{
+    min-height:20px;
+    font-size:0.9rem;
+    font-weight:600;
+    color:var(--dark-grey);
+    margin:8px 0 0 0;
+  }
+  .btn-help{
+    background:var(--yellow);
+    color:var(--dark-grey);
+    font-weight:700;
+  }
+  .btn-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+    margin-top:18px;
+  }
+  .instruction{
+    font-size:0.98rem;
+    color:var(--dark-grey);
+    margin-bottom:14px;
+  }
+  .phrase-block{
+    background:var(--light-grey);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .phrase-text{
+    font-size:1.1rem;
+    font-weight:700;
+    color:var(--dark-blue);
+    margin-bottom:10px;
+  }
+  .feedback-box{
+    background:#F1F8F2;
+    border-left:6px solid var(--green);
+    border-radius:8px;
+    padding:12px 14px;
+    margin-top:14px;
+    min-height:24px;
+    font-weight:600;
+  }
+  .status-dot{
+    display:inline-block;
+    width:12px;
+    height:12px;
+    border-radius:50%;
+    background:var(--yellow);
+    margin-right:8px;
+  }
+  .placeholder-note{
+    font-size:0.85rem;
+    color:#6b6b6a;
+    margin-top:6px;
+  }
+  .mic-fallback-link{
+    display:inline-block;
+    margin-top:6px;
+    font-size:0.9rem;
+    font-weight:700;
+    color:var(--dark-blue);
+    text-decoration:underline;
+  }
+  .record-controls{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin:14px 0;
+  }
+  .sr-only{
+    position:absolute;
+    width:1px;height:1px;
+    padding:0;margin:-1px;
+    overflow:hidden;
+    clip:rect(0,0,0,0);
+    white-space:nowrap;border:0;
+  }
+  .privacy-note{
+    font-size:0.9rem;
+    color:#555;
+    background:#F6FBFC;
+    border-radius:10px;
+    padding:10px 12px;
+    margin-top:10px;
+  }
+  .completion-msg{
+    font-size:1.15rem;
+    font-weight:700;
+    color:var(--dark-blue);
+    margin-bottom:20px;
+  }
+</style>
+</head>
+<body>
+<header class="topbar" aria-hidden="true"></header>
+<div class="wrap">
+  <div class="brand-logo-wrap">
+    <img class="brand-logo" src="data:image/png;base64,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" alt="Pazapa">
+  </div>
+  <p class="brandline">ENGLISH FOR ADULTS</p>
+
+  <!-- Live region for feedback / audio placeholder announcements -->
+  <div id="live-region" class="sr-only" aria-live="polite"></div>
+  <audio id="pz-audio" preload="auto" playsinline></audio>
+
+  <!-- SCREEN 1: WELCOME -->
+  <section class="screen active" id="screen-welcome" tabindex="-1">
+    <h1 id="main-heading">Pronunciation Clinic</h1>
+    <p class="lead">Listen, practise and improve.</p>
+    <p class="instruction">Topic: telling the time. Take your time. There is no time limit.</p>
+    <div class="privacy-note" role="note" aria-label="Device recommendation" id="ai-device-notice"><strong>Please note:</strong> To receive AI feedback, you must complete this exercise on a computer, as the AI feedback feature may not work on all mobile devices.</div>
+
+    <div class="btn-row">
+      <button class="btn-primary" id="btn-start" aria-label="Start the Pronunciation Clinic">Start</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 2: LISTEN TO KEY WORDS -->
+  <section class="screen" id="screen-words" tabindex="-1">
+    <h2>Listen to key words</h2>
+    <p class="instruction">Press Listen. Hear each word. You can listen as many times as you like.</p>
+    <p class="placeholder-note">Your practice recording is not uploaded by this activity. Automatic word recognition depends on your browser and may use the browser provider's speech service.</p>
+
+    <div class="word-grid">
+      <div class="word-card">
+        <!-- MISSING IMAGE: no approved image supplied for "o'clock" (Week 2, Session 2 lesson pack) -->
+        <div class="word-label">o'clock</div>
+        <button class="btn-listen" data-audio="oclock" data-label="o'clock" aria-label="Listen to the word o'clock">🔈 Listen</button>
+        <div class="word-practice" data-word="oclock"></div>
+      </div>
+
+      <div class="word-card">
+        <!-- MISSING IMAGE: no approved image supplied for "half past" (Week 2, Session 2 lesson pack) -->
+        <div class="word-label">half past</div>
+        <button class="btn-listen" data-audio="halfpast" data-label="half past" aria-label="Listen to the phrase half past">🔈 Listen</button>
+        <div class="word-practice" data-word="halfpast"></div>
+      </div>
+
+      <div class="word-card">
+        <!-- MISSING IMAGE: no approved image supplied for "morning" (Week 2, Session 2 lesson pack) -->
+        <div class="word-label">morning</div>
+        <button class="btn-listen" data-audio="morning" data-label="morning" aria-label="Listen to the word morning">🔈 Listen</button>
+        <div class="word-practice" data-word="morning"></div>
+      </div>
+
+      <div class="word-card">
+        <!-- MISSING IMAGE: no approved image supplied for "evening" (Week 2, Session 2 lesson pack) -->
+        <div class="word-label">evening</div>
+        <button class="btn-listen" data-audio="evening" data-label="evening" aria-label="Listen to the word evening">🔈 Listen</button>
+        <div class="word-practice" data-word="evening"></div>
+      </div>
+
+      <div class="word-card">
+        <!-- MISSING IMAGE: no approved image supplied for "start" (Week 2, Session 2 lesson pack) -->
+        <div class="word-label">start</div>
+        <button class="btn-listen" data-audio="start" data-label="start" aria-label="Listen to the word start">🔈 Listen</button>
+        <div class="word-practice" data-word="start"></div>
+      </div>
+
+      <div class="word-card">
+        <!-- MISSING IMAGE: no approved image supplied for "finish" (Week 2, Session 2 lesson pack) -->
+        <div class="word-label">finish</div>
+        <button class="btn-listen" data-audio="finish" data-label="finish" aria-label="Listen to the word finish">🔈 Listen</button>
+        <div class="word-practice" data-word="finish"></div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary btn-carry" data-next="screen-sounds">Carry on</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 3: NOTICE THE SOUNDS -->
+  <section class="screen" id="screen-sounds" tabindex="-1">
+    <h2>Notice the sounds</h2>
+    <p class="instruction">Listen to the last sound in each word.</p>
+
+    <div class="card">
+      <p class="chunk-label">mor<span class="chunk-hl">ning</span></p>
+      <button class="btn-listen" data-audio="morning" data-label="morning" aria-label="Listen to the word morning">🔈 Listen</button>
+    </div>
+    <div class="card">
+      <p class="chunk-label">eve<span class="chunk-hl">ning</span></p>
+      <button class="btn-listen" data-audio="evening" data-label="evening" aria-label="Listen to the word evening">🔈 Listen</button>
+    </div>
+    <div class="card">
+      <p class="chunk-label">o'<span class="chunk-hl">clock</span></p>
+      <button class="btn-listen" data-audio="oclock" data-label="o'clock" aria-label="Listen to the word o'clock">🔈 Listen</button>
+    </div>
+    <div class="card">
+      <p class="chunk-label">half <span class="chunk-hl">past</span></p>
+      <button class="btn-listen" data-audio="halfpast" data-label="half past" aria-label="Listen to the phrase half past">🔈 Listen</button>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary btn-carry" data-next="screen-repeat">Carry on</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 4: LISTEN AND REPEAT -->
+  <section class="screen" id="screen-repeat" tabindex="-1">
+    <h2>Listen and repeat</h2>
+    <p class="instruction">Listen to each sentence. Say it aloud in the same way.</p>
+
+    <div class="phrase-block">
+      <p class="phrase-text">What time is it?</p>
+      <button class="btn-listen" data-audio="p1" data-label="What time is it" aria-label="Listen to the phrase: What time is it">🔈 Listen</button>
+    </div>
+    <div class="phrase-block">
+      <p class="phrase-text">It's nine o'clock.</p>
+      <button class="btn-listen" data-audio="p2" data-label="It's nine o'clock" aria-label="Listen to the phrase: It's nine o'clock">🔈 Listen</button>
+    </div>
+    <div class="phrase-block">
+      <p class="phrase-text">It's half past two.</p>
+      <button class="btn-listen" data-audio="p3" data-label="It's half past two" aria-label="Listen to the phrase: It's half past two">🔈 Listen</button>
+    </div>
+    <div class="phrase-block">
+      <p class="phrase-text">The class finishes at seven.</p>
+      <button class="btn-listen" data-audio="p4" data-label="The class finishes at seven" aria-label="Listen to the phrase: The class finishes at seven">🔈 Listen</button>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary btn-carry" data-next="screen-record">Carry on</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 5: RECORD AND COMPARE -->
+  <section class="screen" id="screen-record" tabindex="-1">
+    <h2>Practise your voice</h2>
+    <p class="instruction">Record yourself saying the sentence, then listen back and compare with the model. Complete one recording attempt before you carry on when recording is available.</p>
+
+    <div class="phrase-block">
+      <p class="phrase-text">Try saying: "What time is it? It's half past two."</p>
+    </div>
+
+    <div class="record-controls">
+      <button class="btn-secondary" id="btn-record" aria-label="Start recording your voice">⏺ Record</button>
+      <button class="btn-secondary" id="btn-stop" disabled aria-label="Stop recording">⏹ Stop</button>
+      <button class="btn-secondary" id="btn-play-mine" disabled aria-label="Listen to your recording">🔈 Listen to mine</button>
+      <button class="btn-secondary" id="btn-delete" disabled aria-label="Delete your recording">🗑 Delete</button>
+    </div>
+    <p id="record-status" class="placeholder-note" aria-live="polite">No recording yet.</p>
+
+    <div class="privacy-note">
+      Your Record and compare audio stays in this browser and is not sent to the AI. AI-assisted word feedback receives only the recognised words and the approved target word.
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary btn-carry" data-next="screen-feedback">Carry on</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 6: AI FEEDBACK / SELF-CHECK -->
+  <section class="screen" id="screen-feedback" tabindex="-1">
+    <h2>Check your speaking</h2>
+    <p class="instruction" id="ai-feedback-instruction">AI-assisted feedback is available during the word practice. Use this final self-check before you continue.</p>
+
+    <div class="card">
+      <p><strong>Did you say every word clearly?</strong></p>
+      <div class="btn-row">
+        <button class="btn-help" id="self-check-yes">Yes</button>
+        <button class="btn-secondary" id="self-check-no">Not yet</button>
+      </div>
+      <div class="feedback-box" id="self-check-feedback" role="status"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary btn-carry" data-next="screen-tryagain">Carry on</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 7: TRY AGAIN -->
+  <section class="screen" id="screen-tryagain" tabindex="-1">
+    <h2>Try again</h2>
+    <p class="instruction">Listen to the model again. Practise privately. Try the whole phrase once more.</p>
+
+    <div class="phrase-block">
+      <p class="phrase-text">What time is it? It's half past two.</p>
+      <button class="btn-listen" data-audio="p1" data-label="What time is it" aria-label="Listen again to the phrase: What time is it">🔈 Listen again</button>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-help" id="btn-retry-feedback">Get a tip</button>
+    </div>
+    <div class="feedback-box" id="retry-feedback" role="status"></div>
+
+    <div class="btn-row">
+      <button class="btn-primary btn-carry" data-next="screen-done">Carry on</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 8: COMPLETION -->
+  <section class="screen" id="screen-done" tabindex="-1">
+    <h2>Well done</h2>
+    <p class="completion-msg">You practised clear time words and sentences.</p>
+
+    <div class="btn-row">
+      <button class="btn-primary" id="btn-finish" disabled aria-label="Finish this activity">Done</button>
+      <button class="btn-secondary" id="btn-try-again-final" aria-label="Go back to the start and try the activity again">Try again</button>
+    </div>
+    <p id="done-status" class="placeholder-note" aria-live="polite"></p>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------------------------------------------------
+     AI FEEDBACK TOGGLE
+     Exactly one configuration variable, as required. When false,
+     all learner-facing AI feedback controls, panels and messages
+     stay hidden and the AI endpoint is never called. Flipping this
+     to true restores the existing AI feedback system with no other
+     code changes required.
+  --------------------------------------------------------- */
+  var AI_FEEDBACK_ENABLED = false;
+
+  /* ---------------------------------------------------------
+     PAZAPA AUDIO MAP — Week 2, Session 2: "Telling the time"
+     MISSING AUDIO: no approved recordings were supplied by the
+     teacher for this lesson's vocabulary or target phrases. Per
+     the no-invented-audio rule, every value below is left empty
+     rather than synthesised. Listen buttons for these items will
+     not play sound until real approved MP3 recordings are added
+     to this map (one data:audio/mpeg;base64,... URL per key).
+     Expected content once supplied:
+       oclock    -> "o'clock"
+       halfpast  -> "half past"
+       morning   -> "morning"
+       evening   -> "evening"
+       start     -> "start"
+       finish    -> "finish"
+       p1        -> "What time is it?"
+       p2        -> "It's nine o'clock."
+       p3        -> "It's half past two."
+       p4        -> "The class finishes at seven."
+  --------------------------------------------------------- */
+  var AUDIO_FILES = {
+    oclock:   "", // MISSING AUDIO: not supplied
+    halfpast: "", // MISSING AUDIO: not supplied
+    morning:  "", // MISSING AUDIO: not supplied
+    evening:  "", // MISSING AUDIO: not supplied
+    start:    "", // MISSING AUDIO: not supplied
+    finish:   "", // MISSING AUDIO: not supplied
+    p1: "", // MISSING AUDIO: not supplied
+    p2: "", // MISSING AUDIO: not supplied
+    p3: "", // MISSING AUDIO: not supplied
+    p4: ""  // MISSING AUDIO: not supplied
+  };
+
+
+  /* ---------------------------------------------------------
+     PRONUNCIATION FEEDBACK CONFIG
+     Only recognised text and the approved target word are sent.
+     Learner audio is never sent to this endpoint.
+  --------------------------------------------------------- */
+  var CONFIG = {
+    feedbackEndpoint: "https://pazapa-ia.netlify.app/.netlify/functions/pronunciation-feedback",
+    feedbackTimeoutMs: 10000,
+    recognitionTimeoutMs: 12000
+  };
+
+  function isSafeEndpoint(url){
+    try{
+      var u = new URL(url);
+      return u.protocol === "https:" &&
+             !u.username && !u.password &&
+             !u.search && !u.hash &&
+             u.hostname !== "localhost" &&
+             u.hostname !== "127.0.0.1";
+    }catch(e){
+      return false;
+    }
+  }
+
+  function sanitiseFeedback(data){
+    if(!data || typeof data !== "object") return null;
+    var status = String(data.status || "");
+    var message = String(data.message || "").trim();
+    var focus = String(data.focus || "").trim();
+    if(["match","try_again","unclear"].indexOf(status) === -1) return null;
+    if(!message) return null;
+    if(/%|\bscores?\b|\bstars?\b|\bgrades?\b|\bcefr\b|\blevels?\b|\bpoints?\b|\bmarks?\b|\bbadges?\b|\b\d+(?:[.,]\d+)?\s*\/\s*\d+\b/i.test(message)) return null;
+    return { status: status, message: message, focus: focus };
+  }
+
+  function requestAiFeedback(targetPhrase, recognisedText){
+    if(!isSafeEndpoint(CONFIG.feedbackEndpoint)){
+      return Promise.reject(new Error("feedback endpoint unavailable"));
+    }
+    var controller = new AbortController();
+    var timer = setTimeout(function(){ controller.abort(); }, CONFIG.feedbackTimeoutMs);
+    return fetch(CONFIG.feedbackEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        targetPhrase: targetPhrase,
+        recognisedText: recognisedText
+      }),
+      signal: controller.signal
+    }).then(function(res){
+      if(!res.ok) throw new Error("feedback request failed");
+      return res.json();
+    }).then(function(data){
+      var clean = sanitiseFeedback(data);
+      if(!clean) throw new Error("invalid feedback");
+      return clean;
+    }).finally(function(){
+      clearTimeout(timer);
+    });
+  }
+
+  /* ---------------------------------------------------------
+     AUDIO — restored from the validated master architecture:
+     one persistent element, one source at a time, never autoplayed.
+  --------------------------------------------------------- */
+  var audioEl = document.getElementById("pz-audio");
+  var currentAudio = null;
+  var audioBusyKey = null;
+  var audioToken = 0;
+  var activeRecordingStoppers = [];
+  var liveRegion = document.getElementById("live-region");
+
+  /* ---------------------------------------------------------
+     AI FEEDBACK TOGGLE — apply at load.
+     When disabled: hide the "complete on a computer" AI notice and
+     remove the AI mention from the final self-check instruction.
+     When enabled: both are restored, no other change required.
+  --------------------------------------------------------- */
+  (function applyAiFeedbackToggle(){
+    var aiNotice = document.getElementById("ai-device-notice");
+    if(aiNotice){
+      aiNotice.hidden = !AI_FEEDBACK_ENABLED;
+    }
+    var aiInstruction = document.getElementById("ai-feedback-instruction");
+    if(aiInstruction){
+      aiInstruction.textContent = AI_FEEDBACK_ENABLED
+        ? "AI-assisted feedback is available during the word practice. Use this final self-check before you continue."
+        : "Use this final self-check before you continue.";
+    }
+  })();
+
+  function stopAudio(){
+    audioToken++;
+    if(!audioEl) return;
+    try{ audioEl.pause(); }catch(e){}
+    try{
+      if(audioEl.readyState > 0) audioEl.currentTime = 0;
+    }catch(e){}
+    currentAudio = null;
+    audioBusyKey = null;
+  }
+
+  function playSource(src, busyKey){
+    if(!audioEl || !src) return;
+
+    // Re-tapping the same Listen button stops the clip.
+    if(audioBusyKey === busyKey){
+      stopAudio();
+      return;
+    }
+
+    stopAudio();
+
+    var token = ++audioToken;
+    audioBusyKey = busyKey;
+    currentAudio = audioEl;
+
+    try{
+      // Keep the same source loaded when replaying it; otherwise set it once.
+      if(audioEl.getAttribute("src") !== src){
+        audioEl.src = src;
+      }else{
+        try{
+          if(audioEl.readyState > 0) audioEl.currentTime = 0;
+        }catch(e2){}
+      }
+
+      var p = audioEl.play();
+      if(p && typeof p.catch === "function"){
+        p.catch(function(error){
+          if(token !== audioToken) return;
+          console.error("Audio playback failed:", error);
+          currentAudio = null;
+          audioBusyKey = null;
+        });
+      }
+    }catch(error){
+      if(token !== audioToken) return;
+      console.error("Audio playback failed:", error);
+      currentAudio = null;
+      audioBusyKey = null;
+    }
+  }
+
+  function playAudioByKey(key){
+    var src = AUDIO_FILES[key];
+    if(!src){
+      console.error("MISSING AUDIO FILE mapping for key:", key);
+      return;
+    }
+    playSource(src, key);
+  }
+
+  if(audioEl){
+    audioEl.addEventListener("ended", function(){
+      currentAudio = null;
+      audioBusyKey = null;
+    });
+
+    audioEl.addEventListener("error", function(){
+      if(!audioEl.getAttribute("src")) return;
+      console.error("Audio loading error:", audioEl.error ? audioEl.error.code : "unknown");
+      currentAudio = null;
+      audioBusyKey = null;
+    });
+  }
+
+  document.querySelectorAll(".btn-listen").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      playAudioByKey(btn.getAttribute("data-audio"));
+    });
+  });
+
+  /* ---------------------------------------------------------
+     LOCAL SESSION STATE
+     Standalone HTML only: no LMS completion system and no persistent
+     learner progress storage.
+  --------------------------------------------------------- */
+  var currentScreenId = "screen-welcome";
+  var localAttemptCompleted = false;
+  var blobRevokers = [];
+
+  function revokeAllBlobUrls(){
+    blobRevokers.forEach(function(fn){
+      try{ fn(); }catch(e){}
+    });
+    blobRevokers = [];
+  }
+
+  /* ---------------------------------------------------------
+     SCREEN NAVIGATION — forward only, one screen visible,
+     focus moved to the new screen's heading.
+  --------------------------------------------------------- */
+  function showScreen(id){
+    // Release any microphone still open from a previous screen before
+    // switching, so the device never holds two recordings open at once
+    // (this matters most on mobile, where a single mic can otherwise
+    // appear "stuck" and refuse to start a new recording).
+    activeRecordingStoppers.forEach(function(stop){
+      try{ stop(); }catch(e){ /* already stopped */ }
+    });
+
+    var target = id ? document.getElementById(id) : null;
+    if(!target || !target.classList.contains("screen")){
+      // Invalid or missing screen id: never throw, just return safely
+      // to the Welcome screen.
+      target = document.getElementById("screen-welcome");
+      id = "screen-welcome";
+    }
+
+    document.querySelectorAll(".screen").forEach(function(s){
+      s.classList.remove("active");
+      s.hidden = true;
+      s.setAttribute("aria-hidden", "true");
+    });
+    target.classList.add("active");
+    target.hidden = false;
+    target.removeAttribute("aria-hidden");
+    target.focus();
+
+    currentScreenId = id;
+  }
+
+  document.getElementById("btn-start").addEventListener("click", function(){
+    showScreen("screen-words");
+  });
+
+  document.querySelectorAll(".btn-carry").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      showScreen(btn.getAttribute("data-next"));
+    });
+  });
+
+  // Apply the same hidden/aria-hidden convention to the statically
+  // rendered initial screen state (before any navigation happens),
+  // so assistive tech and keyboard users never reach an inactive
+  // screen even before the first click.
+  document.querySelectorAll(".screen").forEach(function(s){
+    if(s.classList.contains("active")){
+      s.hidden = false;
+      s.removeAttribute("aria-hidden");
+    } else {
+      s.hidden = true;
+      s.setAttribute("aria-hidden", "true");
+    }
+  });
+
+  /* ---------------------------------------------------------
+     LOCAL RECORD AND COMPARE — required when technically available; never uploaded, never stored
+     beyond this page session. Written to work on both desktop
+     browsers (Chrome, Firefox, Edge) and mobile browsers
+     (Safari/iOS, Chrome/Android), which support different
+     audio mime types and require a secure context (HTTPS or
+     localhost) for microphone access.
+  --------------------------------------------------------- */
+  var mediaRecorder = null;
+  var recordedChunks = [];
+  var mainRecordingAttempted = false;
+  var recordedBlobUrl = null;
+  var activeStream = null;
+  var chosenMimeType = "";
+  var micRequestPending = false;
+
+  var btnRecord = document.getElementById("btn-record");
+  var btnStop = document.getElementById("btn-stop");
+  var btnPlayMine = document.getElementById("btn-play-mine");
+  var btnDelete = document.getElementById("btn-delete");
+  var recordStatus = document.getElementById("record-status");
+
+  function pickSupportedMimeType(){
+    // iOS Safari only accepts audio/mp4; Chrome/Firefox/Edge prefer webm/opus.
+    var candidates = [
+      "audio/webm;codecs=opus",
+      "audio/webm",
+      "audio/mp4",
+      "audio/aac",
+      "audio/ogg;codecs=opus"
+    ];
+    if(typeof MediaRecorder === "undefined" || !MediaRecorder.isTypeSupported){
+      return ""; // let the browser choose its own default
+    }
+    for(var i = 0; i < candidates.length; i++){
+      if(MediaRecorder.isTypeSupported(candidates[i])) return candidates[i];
+    }
+    return "";
+  }
+
+  function recordingSupported(){
+    return !!(navigator.mediaDevices &&
+      navigator.mediaDevices.getUserMedia &&
+      typeof MediaRecorder !== "undefined");
+  }
+
+  function stopActiveStream(){
+    if(activeStream){
+      activeStream.getTracks().forEach(function(t){ t.stop(); });
+      activeStream = null;
+    }
+  }
+
+  /* ---------------------------------------------------------
+     EMBEDDED-CONTEXT / PERMISSIONS-POLICY DIAGNOSIS
+     When this file runs inside an LMS iframe (e.g. the course) that
+     has not delegated microphone access via the iframe's
+     `allow="microphone"` attribute (and, where cross-origin, a
+     matching Permissions-Policy response header), getUserMedia()
+     will fail even though the learner never made a choice. This
+     page cannot grant itself that permission — only the parent
+     page (the course) can — so the goal here is only to detect that
+     situation and explain it clearly, plus offer a same-content
+     "open in a new tab" link as a working fallback, per the
+     standing Global Audio/Recording standard.
+  --------------------------------------------------------- */
+  function getEmbedContext(){
+    var embedded = false;
+    try{ embedded = (window.self !== window.top); }
+    catch(e){ embedded = true; /* cross-origin parent access is itself blocked => definitely embedded */ }
+
+    var policyCheckAvailable = false;
+    var policyBlocked = false;
+    try{
+      if(document.permissionsPolicy && typeof document.permissionsPolicy.allowsFeature === "function"){
+        policyCheckAvailable = true;
+        policyBlocked = !document.permissionsPolicy.allowsFeature("microphone");
+      } else if(document.featurePolicy && typeof document.featurePolicy.allowsFeature === "function"){
+        policyCheckAvailable = true;
+        policyBlocked = !document.featurePolicy.allowsFeature("microphone");
+      }
+    }catch(e){ /* Permissions Policy introspection isn't available in this browser (e.g. Firefox, Safari). */ }
+
+    return { embedded: embedded, policyCheckAvailable: policyCheckAvailable, policyBlocked: policyBlocked };
+  }
+
+  function microphoneErrorMessage(err, context){
+    context = context || getEmbedContext();
+
+    if(context.policyCheckAvailable && context.policyBlocked){
+      return "This activity's microphone access is blocked by the page it is embedded in (a browser Permissions Policy restriction). A the course administrator needs to add microphone permission to this activity's frame \u2014 this page cannot fix that itself.";
+    }
+
+    var name = err && err.name;
+
+    if(name === "NotAllowedError" || name === "PermissionDeniedError" || name === "SecurityError"){
+      if(context.embedded){
+        return "Microphone access was blocked. This may be a personal browser block (check the address bar padlock or your browser's site settings and allow the microphone), or the page this activity is embedded in may be blocking it. If allowing it in your browser does not help, ask your the course administrator to check the activity's frame permissions.";
+      }
+      return "Microphone access was blocked. On a computer, click the microphone or lock icon in the address bar and allow it. On a phone, open your browser's site settings for this page and allow the microphone, then reload.";
+    }
+    if(name === "NotFoundError" || name === "DevicesNotFoundError"){
+      return "No microphone was found on this device.";
+    }
+    if(name === "NotReadableError" || name === "TrackStartError"){
+      return "The microphone is being used by another app. Close other apps using it and try again.";
+    }
+    if(name === "OverconstrainedError" || name === "ConstraintNotSatisfiedError"){
+      return "This device's microphone could not be used with the current recording settings.";
+    }
+    if(name === "AbortError"){
+      return "Recording was interrupted before it could start. Please try again.";
+    }
+    return "Recording could not start due to an unexpected error. You can continue without recording.";
+  }
+
+  // Shown only after a mic failure while embedded, as a working fallback:
+  // opening the exact same page as a normal top-level tab removes the
+  // iframe's permission restriction entirely (the course's own standalone package
+  // "Display" setting can also be set to open in a new window instead).
+  function offerNewTabFallback(afterEl, context){
+    if(!context.embedded) return;
+    if(afterEl.nextElementSibling && afterEl.nextElementSibling.classList &&
+       afterEl.nextElementSibling.classList.contains("mic-fallback-link")) return;
+    var a = document.createElement("a");
+    a.href = window.location.href;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.className = "mic-fallback-link";
+    a.textContent = "Open this activity in a new tab to use the microphone";
+    afterEl.insertAdjacentElement("afterend", a);
+  }
+
+  // Proactively check microphone permission where the browser supports it
+  // (most desktop and Android Chrome/Edge/Firefox; not iOS Safari), so a
+  // learner who already blocked the mic sees guidance before tapping Record.
+  function checkMicPermissionOnLoad(){
+    if(!navigator.permissions || !navigator.permissions.query) return;
+    navigator.permissions.query({ name: "microphone" }).then(function(status){
+      updateStatusForPermission(status.state);
+      status.onchange = function(){ updateStatusForPermission(status.state); };
+    }).catch(function(){ /* Permissions API may not support "microphone" on this browser; ignore. */ });
+  }
+
+  function updateStatusForPermission(state){
+    if(state === "denied"){
+      recordStatus.textContent = "Microphone access is blocked in this browser. Open your browser's site settings to allow the microphone, then reload this page.";
+    } else if(state === "granted"){
+      recordStatus.textContent = "Microphone access is already allowed on this device.";
+    }
+    // "prompt" state: leave the default "No recording yet." message.
+  }
+
+  checkMicPermissionOnLoad();
+
+  activeRecordingStoppers.push(function(){
+    if(mediaRecorder && mediaRecorder.state !== "inactive"){
+      mediaRecorder.stop();
+    }
+    stopActiveStream();
+    micRequestPending = false;
+    btnRecord.disabled = false;
+    btnStop.disabled = true;
+  });
+
+  blobRevokers.push(function(){
+    if(recordedBlobUrl){
+      URL.revokeObjectURL(recordedBlobUrl);
+      recordedBlobUrl = null;
+    }
+  });
+
+  btnRecord.addEventListener("click", function(){
+    if(micRequestPending) return; // rapid repeated taps must not open several mic streams
+    if(!window.isSecureContext){
+      recordStatus.textContent = "Recording needs a secure (https) page. You can continue without recording.";
+      return;
+    }
+    if(!recordingSupported()){
+      recordStatus.textContent = "Recording is not supported on this device or browser. You can continue without recording.";
+      return;
+    }
+
+    var embedContext = getEmbedContext();
+    if(embedContext.policyCheckAvailable && embedContext.policyBlocked){
+      recordStatus.textContent = microphoneErrorMessage(null, embedContext);
+      offerNewTabFallback(recordStatus, embedContext);
+      return;
+    }
+
+    micRequestPending = true;
+    btnRecord.disabled = true;
+    recordStatus.textContent = "Asking for microphone access…";
+
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
+      micRequestPending = false;
+      activeStream = stream;
+      recordedChunks = [];
+      chosenMimeType = pickSupportedMimeType();
+
+      try{
+        mediaRecorder = chosenMimeType
+          ? new MediaRecorder(stream, { mimeType: chosenMimeType })
+          : new MediaRecorder(stream);
+      }catch(err){
+        recordStatus.textContent = "This browser could not start recording. You can continue without recording.";
+        btnRecord.disabled = false;
+        stopActiveStream();
+        return;
+      }
+
+      mediaRecorder.ondataavailable = function(e){
+        if(e.data && e.data.size > 0) recordedChunks.push(e.data);
+      };
+
+      mediaRecorder.onerror = function(){
+        recordStatus.textContent = "Recording stopped because of a device error. You can try again.";
+        btnRecord.disabled = false;
+        btnStop.disabled = true;
+        stopActiveStream();
+      };
+
+      mediaRecorder.onstop = function(){
+        var blobType = mediaRecorder.mimeType || chosenMimeType || "audio/webm";
+        var blob = new Blob(recordedChunks, { type: blobType });
+        if(recordedBlobUrl) URL.revokeObjectURL(recordedBlobUrl);
+        recordedBlobUrl = URL.createObjectURL(blob);
+        btnPlayMine.disabled = false;
+        btnDelete.disabled = false;
+        recordStatus.textContent = "Recording saved on this device.";
+        stopActiveStream();
+      };
+
+      // Collect data in short chunks so short mobile recordings
+      // are never lost if the browser stops the stream abruptly.
+      mediaRecorder.start(250);
+      mainRecordingAttempted = true;
+      btnStop.disabled = false;
+      recordStatus.textContent = "Recording…";
+    }).catch(function(err){
+      micRequestPending = false;
+      recordStatus.textContent = microphoneErrorMessage(err, embedContext);
+      offerNewTabFallback(recordStatus, embedContext);
+      btnRecord.disabled = false;
+    });
+  });
+
+  btnStop.addEventListener("click", function(){
+    if(mediaRecorder && mediaRecorder.state !== "inactive"){
+      mediaRecorder.stop();
+    }
+    btnRecord.disabled = false;
+    btnStop.disabled = true;
+  });
+
+  btnPlayMine.addEventListener("click", function(){
+    stopAudio();
+    if(recordedBlobUrl){
+      var audio = new Audio(recordedBlobUrl);
+      currentAudio = audio;
+      audio.addEventListener("ended", function(){
+        if(currentAudio === audio) currentAudio = null;
+      });
+      audio.play().catch(function(){
+        recordStatus.textContent = "Could not play back the recording on this device.";
+      });
+    }
+  });
+
+  btnDelete.addEventListener("click", function(){
+    if(recordedBlobUrl) URL.revokeObjectURL(recordedBlobUrl);
+    recordedBlobUrl = null;
+    recordedChunks = [];
+    btnPlayMine.disabled = true;
+    btnDelete.disabled = true;
+    recordStatus.textContent = "Recording deleted.";
+  });
+
+
+  var recordCarry = document.querySelector("#screen-record .btn-carry");
+  if(recordCarry){
+    recordCarry.addEventListener("click", function(ev){
+      if(recordingSupported() && !mainRecordingAttempted){
+        ev.preventDefault();
+        ev.stopImmediatePropagation();
+        recordStatus.textContent = "Please make one recording attempt before you carry on.";
+      }
+    }, true);
+  }
+
+  /* ---------------------------------------------------------
+     PER-WORD "SAY IT AND CHECK" — lets a learner record each
+     key word individually and get quick, supportive feedback.
+     Feedback is produced from the browser speech-recognition TEXT result.
+     The recognised text and approved target word may be sent to the
+     configured feedback endpoint. The learner recording itself stays
+     local and is never sent to the AI endpoint. No score, grade, or accent judgement is ever
+     shown, per the standing accessibility/feedback rules.
+     Falls back to a plain self-check where speech recognition
+     isn't supported (e.g. iOS Safari, Firefox).
+  --------------------------------------------------------- */
+  var SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+
+  function normaliseSpeech(text){
+    return text.toLowerCase().replace(/[^a-z\s]/g, "").trim();
+  }
+
+  function wordWasHeard(transcripts, word){
+    var target = normaliseSpeech(word);
+    for(var i = 0; i < transcripts.length; i++){
+      var t = normaliseSpeech(transcripts[i]);
+      if(t === target || t.indexOf(target) !== -1) return true;
+    }
+    return false;
+  }
+
+  function buildWordPractice(container){
+    var word = container.getAttribute("data-word");
+
+    container.innerHTML =
+      '<div class="practice-controls">' +
+        '<button type="button" class="btn-mic" data-role="record" aria-label="Record yourself saying ' + word + '">\u{1F3A4}</button>' +
+        '<button type="button" class="btn-mic" data-role="stop" disabled aria-label="Stop recording ' + word + '">\u23F9</button>' +
+        '<button type="button" class="btn-mic" data-role="play" disabled aria-label="Listen to your recording of ' + word + '">\u25B6</button>' +
+      '</div>' +
+      '<p class="practice-feedback" role="status" aria-live="polite"></p>';
+
+    var recordBtn = container.querySelector('[data-role="record"]');
+    var stopBtn = container.querySelector('[data-role="stop"]');
+    var playBtn = container.querySelector('[data-role="play"]');
+    var feedback = container.querySelector(".practice-feedback");
+
+    var localRecorder = null;
+    var localChunks = [];
+    var localBlobUrl = null;
+    var localStream = null;
+    var recognition = null;
+    var recognitionGaveResult = false;
+    var localRequestPending = false;
+
+    function resetButtons(){
+      recordBtn.disabled = false;
+      recordBtn.classList.remove("is-recording");
+      stopBtn.disabled = true;
+    }
+
+    function stopLocalStream(){
+      if(localStream){
+        localStream.getTracks().forEach(function(t){ t.stop(); });
+        localStream = null;
+      }
+    }
+
+    activeRecordingStoppers.push(function(){
+      if(localRecorder && localRecorder.state !== "inactive"){
+        localRecorder.stop();
+      }
+      if(recognition){
+        try{ recognition.stop(); }catch(e){ /* already stopped */ }
+      }
+      stopLocalStream();
+      localRequestPending = false;
+      resetButtons();
+    });
+
+    blobRevokers.push(function(){
+      if(localBlobUrl){
+        URL.revokeObjectURL(localBlobUrl);
+        localBlobUrl = null;
+      }
+    });
+
+    recordBtn.addEventListener("click", function(){
+      if(localRequestPending) return; // rapid repeated taps must not open several mic streams
+      if(!window.isSecureContext){
+        feedback.textContent = "Recording needs a secure (https) page.";
+        return;
+      }
+      if(!recordingSupported()){
+        feedback.textContent = "Recording is not supported on this device or browser.";
+        return;
+      }
+
+      var embedContext = getEmbedContext();
+      if(embedContext.policyCheckAvailable && embedContext.policyBlocked){
+        feedback.textContent = microphoneErrorMessage(null, embedContext);
+        offerNewTabFallback(feedback, embedContext);
+        return;
+      }
+
+      localRequestPending = true;
+      recordBtn.disabled = true;
+      recordBtn.classList.add("is-recording");
+      recognitionGaveResult = false;
+      feedback.textContent = "Listening\u2026 say \u201C" + word + "\u201D.";
+
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
+        localRequestPending = false;
+        localStream = stream;
+        localChunks = [];
+        var mime = pickSupportedMimeType();
+
+        try{
+          localRecorder = mime
+            ? new MediaRecorder(stream, { mimeType: mime })
+            : new MediaRecorder(stream);
+        }catch(err){
+          feedback.textContent = "This browser could not start recording.";
+          localRequestPending = false;
+          resetButtons();
+          stopLocalStream();
+          return;
+        }
+
+        localRecorder.ondataavailable = function(e){
+          if(e.data && e.data.size > 0) localChunks.push(e.data);
+        };
+
+        localRecorder.onerror = function(){
+          feedback.textContent = "Recording stopped because of a device error. Try again.";
+          resetButtons();
+          stopLocalStream();
+        };
+
+        localRecorder.onstop = function(){
+          var blobType = localRecorder.mimeType || mime || "audio/webm";
+          var blob = new Blob(localChunks, { type: blobType });
+          if(localBlobUrl) URL.revokeObjectURL(localBlobUrl);
+          localBlobUrl = URL.createObjectURL(blob);
+          playBtn.disabled = false;
+          stopLocalStream();
+        };
+
+        localRecorder.start(250);
+        stopBtn.disabled = false;
+
+        // Run browser speech recognition alongside the local recording.
+        // Only recognised TEXT and the approved target word may be sent
+        // to the configured feedback endpoint; learner audio stays local.
+        if(SpeechRecognitionCtor){
+          try{
+            recognition = new SpeechRecognitionCtor();
+            recognition.lang = "en-GB";
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 3;
+
+            
+            var recognitionSettled = false;
+            var recognitionTimer = setTimeout(function(){
+              if(recognitionSettled) return;
+              recognitionSettled = true;
+              try{ recognition.abort(); }catch(e){}
+              feedback.textContent = "Speaking practice did not respond in this browser. You can try again or carry on.";
+              resetButtons();
+            }, CONFIG.recognitionTimeoutMs);
+
+            function clearRecognitionTimer(){
+              if(recognitionTimer){
+                clearTimeout(recognitionTimer);
+                recognitionTimer = null;
+              }
+            }
+
+            recognition.onresult = function(event){
+              if(recognitionSettled) return;
+              recognitionSettled = true;
+              clearRecognitionTimer();
+              recognitionGaveResult = true;
+
+              var alts = event.results[0];
+              var transcripts = [];
+              for(var i = 0; i < alts.length; i++){
+                transcripts.push(alts[i].transcript);
+              }
+              var recognisedText = transcripts.length ? transcripts[0] : "";
+
+              if(!recognisedText){
+                feedback.textContent = "The words were not clear enough to compare. Listen and try again, or carry on.";
+                return;
+              }
+
+              if(AI_FEEDBACK_ENABLED){
+                feedback.textContent = "Checking your words…";
+                requestAiFeedback(word, recognisedText).then(function(ai){
+                  feedback.textContent = ai.message;
+                }).catch(function(){
+                  if(wordWasHeard(transcripts, word)){
+                    feedback.textContent = "We recognised “" + word + "”. Listen to your recording and compare it with the model.";
+                  } else {
+                    feedback.textContent = "I could not compare the words this time. Listen and try again, or carry on.";
+                  }
+                });
+              } else {
+                // AI feedback is disabled: never call the endpoint, never
+                // show an AI error. Give the learner a simple, local
+                // acknowledgement instead so they are never blocked.
+                if(wordWasHeard(transcripts, word)){
+                  feedback.textContent = "We recognised “" + word + "”. Listen to your recording and compare it with the model.";
+                } else {
+                  feedback.textContent = "Listen to your recording and compare it with the model.";
+                }
+              }
+            };
+
+            recognition.onerror = function(){
+              if(recognitionSettled) return;
+              recognitionSettled = true;
+              clearRecognitionTimer();
+              if(!recognitionGaveResult){
+                feedback.textContent = "Automatic word recognition is unavailable. Listen to your recording and compare it with the model.";
+              }
+              resetButtons();
+            };
+
+            recognition.onend = function(){
+              clearRecognitionTimer();
+              if(!recognitionSettled && !recognitionGaveResult){
+                recognitionSettled = true;
+                feedback.textContent = "I could not compare the words this time. Listen and try again, or carry on.";
+                resetButtons();
+              }
+            };
+
+            recognition.start();
+          }catch(e){
+            recognition = null;
+          }
+        }
+      }).catch(function(err){
+        localRequestPending = false;
+        resetButtons();
+        feedback.textContent = microphoneErrorMessage(err, embedContext);
+        offerNewTabFallback(feedback, embedContext);
+      });
+    });
+
+    stopBtn.addEventListener("click", function(){
+      if(localRecorder && localRecorder.state !== "inactive"){
+        localRecorder.stop();
+      }
+      if(recognition){
+        try{ recognition.stop(); }catch(e){ /* already stopped */ }
+      }
+      resetButtons();
+      if(!SpeechRecognitionCtor){
+        feedback.textContent = "Automatic word recognition is unavailable. Listen to your recording and compare it with the model.";
+      }
+    });
+
+    playBtn.addEventListener("click", function(){
+      stopAudio();
+      if(localBlobUrl){
+        var audio = new Audio(localBlobUrl);
+        currentAudio = audio;
+        audio.addEventListener("ended", function(){
+          if(currentAudio === audio) currentAudio = null;
+        });
+        audio.play().catch(function(){
+          feedback.textContent = "Could not play back the recording on this device.";
+        });
+      }
+    });
+  }
+
+  document.querySelectorAll(".word-practice").forEach(buildWordPractice);
+
+  /* ---------------------------------------------------------
+     FINAL SELF-CHECK — AI-assisted feedback is provided during word practice;
+     this final check remains non-scored
+  --------------------------------------------------------- */
+  var selfCheckFeedback = document.getElementById("self-check-feedback");
+  document.getElementById("self-check-yes").addEventListener("click", function(){
+    selfCheckFeedback.textContent = "Good choice. That's useful English.";
+  });
+  document.getElementById("self-check-no").addEventListener("click", function(){
+    selfCheckFeedback.textContent = "Listen again and try once more. You're building confidence.";
+  });
+
+  /* ---------------------------------------------------------
+     TRY AGAIN feedback line (random, non-scored, no red)
+  --------------------------------------------------------- */
+  var retryLines = [
+    "Listen to \u201Chalf past\u201D again.",
+    "Good effort. Try the whole phrase once more.",
+    "Use the model if you need help.",
+    "That's useful English.",
+    "You're building confidence."
+  ];
+  document.getElementById("btn-retry-feedback").addEventListener("click", function(){
+    var line = retryLines[Math.floor(Math.random() * retryLines.length)];
+    document.getElementById("retry-feedback").textContent = line;
+  });
+
+  /* ---------------------------------------------------------
+     COMPLETION — local only.
+  --------------------------------------------------------- */
+  var btnFinish = document.getElementById("btn-finish");
+  var doneStatus = document.getElementById("done-status");
+
+  var doneObserver = new MutationObserver(function(){
+    if(document.getElementById("screen-done").classList.contains("active")){
+      btnFinish.disabled = false;
+    }
+  });
+  doneObserver.observe(document.getElementById("screen-done"), {
+    attributes: true,
+    attributeFilter: ["class"]
+  });
+
+  btnFinish.addEventListener("click", function(){
+    if(localAttemptCompleted) return;
+    localAttemptCompleted = true;
+    btnFinish.disabled = true;
+    doneStatus.textContent = "Step 3 is complete.";
+  });
+
+  document.getElementById("btn-try-again-final").addEventListener("click", function(){
+    // Stop everything first: mic streams, speech recognition, and any
+    // recorder still mid-flight — before touching any Blob URLs, so we
+    // are never revoking a URL a live recorder is about to replace.
+    activeRecordingStoppers.forEach(function(stop){
+      try{ stop(); }catch(e){ /* already stopped */ }
+    });
+    stopAudio(); // stop any playing model audio or learner playback
+
+    // Revoke the main recording Blob URL AND every per-word recording
+    // Blob URL (blobRevokers covers both).
+    revokeAllBlobUrls();
+    recordedBlobUrl = null;
+    recordedChunks = [];
+
+    btnPlayMine.disabled = true;
+    btnDelete.disabled = true;
+    recordStatus.textContent = "No recording yet.";
+    selfCheckFeedback.textContent = "";
+    document.getElementById("retry-feedback").textContent = "";
+    doneStatus.textContent = "";
+    btnFinish.disabled = true;
+    btnFinish.textContent = "Done";
+    btnFinish.removeAttribute("aria-pressed");
+    localAttemptCompleted = false;
+    mainRecordingAttempted = false;
+    showScreen("screen-welcome");
+  });
+
+  /* ---------------------------------------------------------
+     PAGE EXIT — local cleanup only.
+  --------------------------------------------------------- */
+  function cleanupLocalMedia(){
+    try{
+      activeRecordingStoppers.forEach(function(stop){
+        try{ stop(); }catch(e){}
+      });
+      stopAudio();
+      revokeAllBlobUrls();
+    }catch(e){}
+  }
+  window.addEventListener("pagehide", cleanupLocalMedia);
+  window.addEventListener("beforeunload", cleanupLocalMedia);
+
+})();
+</script>
+</body>
+</html>
