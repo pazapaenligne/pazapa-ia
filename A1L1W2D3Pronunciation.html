@@ -376,7 +376,7 @@ button[disabled]:hover{background:#FFFFFF;}
           <button type="button" class="pz-btn-quiet" data-rec-clear disabled>Delete</button>
         </div>
         <p class="pz-rec-status" data-rec-status role="status" aria-live="polite"></p>
-        <audio data-rec-audio hidden></audio>
+        <audio data-rec-audio></audio>
       </div>
 
       <div class="pz-btnrow" style="margin-top:16px;">
@@ -412,7 +412,7 @@ button[disabled]:hover{background:#FFFFFF;}
           <button type="button" class="pz-btn-quiet" data-rec-clear disabled>Delete</button>
         </div>
         <p class="pz-rec-status" data-rec-status role="status" aria-live="polite"></p>
-        <audio data-rec-audio hidden></audio>
+        <audio data-rec-audio></audio>
       </div>
 
       <div class="pz-btnrow" style="margin-top:16px;">
@@ -462,7 +462,7 @@ button[disabled]:hover{background:#FFFFFF;}
           <button type="button" class="pz-btn-quiet" data-rec-clear disabled>Delete</button>
         </div>
         <p class="pz-rec-status" data-rec-status role="status" aria-live="polite"></p>
-        <audio data-rec-audio hidden></audio>
+        <audio data-rec-audio></audio>
       </div>
 
       <div class="pz-btnrow" style="margin-top:16px;">
@@ -498,7 +498,7 @@ button[disabled]:hover{background:#FFFFFF;}
           <button type="button" class="pz-btn-quiet" data-rec-clear disabled>Delete</button>
         </div>
         <p class="pz-rec-status" data-rec-status role="status" aria-live="polite"></p>
-        <audio data-rec-audio hidden></audio>
+        <audio data-rec-audio></audio>
       </div>
 
       <div class="pz-selfcheck">
@@ -851,6 +851,7 @@ function setupRecordPanel(panel){
         revokeUrl();
         objectUrl = URL.createObjectURL(blob);
         audioEl.src = objectUrl;
+        audioEl.load(); /* forces the element to pick up the new source reliably across browsers */
         playBtn.disabled = false;
         clearBtn.disabled = false;
         statusEl.textContent = "Recording ready. Press \u201cHear my recording\u201d to listen back. Nicely done!";
@@ -885,7 +886,10 @@ function setupRecordPanel(panel){
     if (!objectUrl) return;
     stopAudio(); /* a learner recording never plays at the same time as a model clip */
     try { audioEl.currentTime = 0; } catch(e){}
-    audioEl.play();
+    var p = audioEl.play();
+    if (p && typeof p.catch === "function"){
+      p.catch(function(err){ console.error("Recording playback failed:", err); });
+    }
   });
 
   clearBtn.addEventListener("click", function(){
