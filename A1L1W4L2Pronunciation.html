@@ -281,6 +281,18 @@ button[disabled]:hover{background:#FFFFFF;}
 
 .pz-status{font-size:0.95rem;margin:12px 0 0;}
 
+/* The nav-status line carries the reason Next/Finish is blocked. Plain text
+   here was too easy to miss (it reads as if the button simply did nothing),
+   so it gets the same yellow attention treatment as a try-again result —
+   but only while it actually holds a message. */
+#pz-nav-status:not(:empty){
+  background:var(--pz-yellow-20);
+  border:2px solid var(--pz-yellow);
+  border-radius:var(--pz-radius);
+  padding:10px 12px;
+  font-weight:600;
+}
+
 /* ---------- footer nav ---------- */
 .pz-nav{
   display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;
@@ -688,6 +700,7 @@ function playSource(src, busyKey, btn){
   stopAudio();
   stopRecognition();
   stopActiveRecorder();                                   /* one source at a time */
+  cancelPendingRecordingRequest();
   var token = ++audioToken;
   audioBusyKey = busyKey;
   refreshAudioButtons();
@@ -999,10 +1012,40 @@ function focusIsApproved(focus, index){
 
 var RECORD_MAX_MS = 12000;   /* silent safety cap, not a learner-facing timer */
 
+/* How long to wait for the browser's own microphone-permission decision
+   before giving up on it. Without this, a permission prompt the learner
+   never answers — or one an embedding iframe silently never resolves —
+   left the Record button stuck on "Stop recording" forever, with no way
+   to cancel it (Delete/Try again shown, but not clicking Stop, since no
+   MediaRecorder had been created yet to stop). Mirrors the existing
+   RECOGNITION_TIMEOUT_MS safety pattern for speech recognition. */
+var RECORD_PERMISSION_TIMEOUT_MS = 10000;
+
 var recGen = 0;          /* generation token: a stale callback must do nothing */
 var recorder = null;
 var recPanel = null;
 var recStream = null;
+/* The panel currently waiting on getUserMedia() to settle, before any
+   MediaRecorder exists. Tracked separately from recPanel (which is only
+   set once recording has actually started) so a still-pending request can
+   be found and cancelled — by its own timeout, by the learner clicking
+   the button again, or by leaving the screen. */
+var recPendingPanel = null;
+var recPendingTimer = null;
+
+/* Ends whatever getUserMedia() request is still in flight, if any: clears
+   its timer, invalidates it via recGen so a late resolve is discarded
+   rather than silently starting a recording on a screen the learner has
+   left, and restores that panel's button to its normal, clickable state. */
+function cancelPendingRecordingRequest(){
+  if (recPendingTimer){ clearTimeout(recPendingTimer); recPendingTimer = null; }
+  if (recPendingPanel){
+    recGen++;
+    setRecBusy(recPendingPanel, false);
+    showRecStatus(recPendingPanel, "");
+    recPendingPanel = null;
+  }
+}
 
 function recordingSupported(){
   return !!(window.isSecureContext
@@ -1087,6 +1130,7 @@ function showRecStatus(panel, text){
 
 function startRecording(panel){
   if (!recordingSupported()) return;
+  cancelPendingRecordingRequest();   /* only one pending request at a time */
   var gen = ++recGen;          /* invalidates any previous attempt immediately */
   stopAudio();
   stopRecognition();
@@ -1094,8 +1138,25 @@ function startRecording(panel){
   clearRecording(panel);
   setRecBusy(panel, true);
   showRecStatus(panel, "Recording. Say the sentence.");
+  recPendingPanel = panel;
+
+  /* Safety timeout: if the browser's permission decision never arrives,
+     this recovers the button instead of leaving it stuck on "Stop
+     recording" indefinitely. A late resolve after this fires is discarded
+     by the gen check below, since cancelPendingRecordingRequest() (called
+     from the timer) bumps recGen. */
+  recPendingTimer = setTimeout(function(){
+    if (gen !== recGen) return;
+    cancelPendingRecordingRequest();
+    panel.pzRecAttempted = true;
+    showRecStatus(panel, "The microphone did not respond. You can try again or carry on.");
+    var after = recPart(panel, "rec-after");
+    if (after) after.hidden = false;
+  }, RECORD_PERMISSION_TIMEOUT_MS);
 
   navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
+    if (recPendingTimer){ clearTimeout(recPendingTimer); recPendingTimer = null; }
+    if (recPendingPanel === panel) recPendingPanel = null;
     if (gen !== recGen){ releaseStream(stream); return; }   /* superseded */
     var chunks = [];
     var mr, capTimer = null;
@@ -1171,6 +1232,8 @@ function startRecording(panel){
       try { if (mr.state === "recording") mr.stop(); } catch(e){}
     }, RECORD_MAX_MS);
   }).catch(function(){
+    if (recPendingTimer){ clearTimeout(recPendingTimer); recPendingTimer = null; }
+    if (recPendingPanel === panel) recPendingPanel = null;
     if (gen !== recGen) return;
     setRecBusy(panel, false);
     panel.pzRecAttempted = true;
@@ -1180,7 +1243,16 @@ function startRecording(panel){
 }
 
 function toggleRecording(panel){
-  if (panel.pzRecording){
+  if (recPendingPanel === panel){
+    /* Still waiting on the permission decision: cancel it outright rather
+       than call stopActiveRecorder(), which would do nothing — no
+       MediaRecorder exists yet to stop. */
+    cancelPendingRecordingRequest();
+    showRecStatus(panel, "Cancelled. You can try again or carry on.");
+    panel.pzRecAttempted = true;
+    var after = recPart(panel, "rec-after");
+    if (after) after.hidden = false;
+  } else if (panel.pzRecording){
     stopActiveRecorder();
   } else {
     startRecording(panel);
@@ -1605,6 +1677,7 @@ function showScreen(i){
   stopAudio();
   stopRecognition();
   stopActiveRecorder();
+  cancelPendingRecordingRequest();   /* a still-pending mic request must not resolve on the next screen */
   clearAllRecordings();      /* privacy: a recording never outlives its screen */
   abortPendingFeedback(null);
   resetAllPanels();
@@ -1837,10 +1910,10 @@ function init(){
 
   /* release the microphone and audio if the page goes away */
   window.addEventListener("pagehide", function(){
-    stopRecognition(); stopActiveRecorder(); clearAllRecordings(); stopAudio();
+    stopRecognition(); stopActiveRecorder(); cancelPendingRecordingRequest(); clearAllRecordings(); stopAudio();
   });
   window.addEventListener("beforeunload", function(){
-    stopRecognition(); stopActiveRecorder(); clearAllRecordings(); stopAudio();
+    stopRecognition(); stopActiveRecorder(); cancelPendingRecordingRequest(); clearAllRecordings(); stopAudio();
   });
 
   showScreen(0);
