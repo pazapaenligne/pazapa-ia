@@ -1309,6 +1309,24 @@ function buildPhraseScreen(index){
   h1.id = "pz-p" + n + "-h";
   sec.appendChild(h1);
 
+  /* ---- always-visible Try again — resets this sentence's screen with no
+     dependency on the microphone, speech recognition or a secure context,
+     so a Try again control is present here even in a browser where neither
+     the Record-and-compare panel nor the Practise-speaking panel can
+     render. It restarts audio/recognition/recording cleanly (the same
+     teardown showScreen always runs) without clearing whether the learner
+     has already attempted this sentence, so it never re-blocks Next. */
+  var topRow = el("div", "pz-btnrow");
+  var tryAgainTop = el("button", "pz-btn-quiet", "Try again");
+  tryAgainTop.type = "button";
+  tryAgainTop.setAttribute("aria-label", "Try again: " + p.text);
+  tryAgainTop.addEventListener("click", function(){
+    showScreen(current);
+    announce("Starting this sentence again.");
+  });
+  topRow.appendChild(tryAgainTop);
+  sec.appendChild(topRow);
+
   /* ---- model card ---- */
   var card = el("div", "pz-card");
 
