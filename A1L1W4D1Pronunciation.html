@@ -753,7 +753,20 @@ function buildRecordPanel(key, kind, audioKey, listenLabel){
   recBtn.addEventListener("click", function(){
     stopPlayback();
     stopActiveRecorder();
-    navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+    var gum;
+    try{
+      gum = navigator.mediaDevices.getUserMedia({audio:true});
+    }catch(syncErr){
+      status.textContent = "Recording is not available in this browser. You can still say it aloud.";
+      fallbackBtn.hidden = false;
+      return;
+    }
+    if (!gum || typeof gum.then !== "function"){
+      status.textContent = "Recording is not available in this browser. You can still say it aloud.";
+      fallbackBtn.hidden = false;
+      return;
+    }
+    gum.then(function(stream){
       recState[key].stream = stream;
       var mime = pickMimeType();
       var rec;
@@ -1008,6 +1021,19 @@ function resetActivity(){
   showScreen(0);
   announce("Activity restarted from the beginning.");
 }
+
+/* ============================================================================
+   GLOBAL SAFETY NET — catches anything unexpected anywhere in the recording
+   or playback flow so a stray error can never silently break a button with
+   no feedback. Console only, per the audio standard: the learner-facing
+   interface stays clean and reassuring, never a technical error message.
+   ========================================================================= */
+window.addEventListener("unhandledrejection", function(ev){
+  console.error("Unhandled promise rejection:", ev.reason);
+});
+window.addEventListener("error", function(ev){
+  console.error("Uncaught error:", ev.message);
+});
 
 /* ============================================================================
    START-UP
