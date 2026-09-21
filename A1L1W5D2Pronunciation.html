@@ -23,9 +23,10 @@ against the supplied lesson vocabulary and Useful English lines)
   final-sound tag on each card. This is a different feature and a different
   visual device from other clinics in this programme (final-sound tags, not
   stress marks or syllable blocks).
-- Screen B: rising, polite question intonation on "How much is this?" and
-  falling statement intonation on "Can I pay by card?", shown as an arrow
-  path rather than stress marks or chunk strips.
+- Screen B: falling intonation on the wh-question "How much is this?" and
+  rising intonation on the yes/no question "Can I pay by card?" — the
+  standard English pattern for these two question types — shown as an
+  arrow path rather than stress marks or chunk strips.
 
 ACTIVITY TYPES USED (rotated per the variety brief)
 Sound Spotlight (Screen A) -> Intonation Path (Screen B) -> Shadow the
@@ -34,14 +35,12 @@ Challenge (Screen D, choose-one retry) -> Completion. This is a "Sound to
 Sentence" style progression, not the six-identical-screens pattern.
 
 AUDIO STATE
-No official human-recorded audio was supplied with this production prompt
-(only vocabulary illustrations and text). Per programme rules, Listen and
-Listen slowly are therefore NOT rendered: this file never fabricates audio,
-never substitutes text-to-speech for a missing recording, and never invents
-a phonetic rule. Each card instead shows the written target clearly and asks
-the learner to read it aloud, then Record and compare their own voice. When
-real recordings are supplied later, add them to LESSON_AUDIO and the
-Listen controls will appear automatically — no other change is needed.
+Seven official human-recorded MP3s were supplied and are embedded below as
+exact Base64 of the real file bytes (never regenerated, never pronounced by
+the model, never TTS): price, kilo, cash, card, receipt, "How much is
+this?", "Can I pay by card?". Every Listen control is therefore active.
+Record and compare remains available alongside Listen on every item so the
+learner can still compare their own voice against the model.
 
 RECORD AND COMPARE
 MediaRecorder, local-only. getUserMedia runs only after a direct press of
@@ -248,7 +247,7 @@ button[disabled]:hover{background:#FFFFFF;}
   <!-- SCREEN 4: Intonation Path — useful phrases -->
   <section class="pz-screen" id="pz-s4" tabindex="-1" hidden>
     <h1>Ask and answer politely</h1>
-    <p class="pz-sub">Notice the voice going up for a question, and down for a clear statement.</p>
+    <p class="pz-sub">Notice the voice falling on a "how much" question, and rising on a yes/no question like "Can I...?".</p>
     <div id="pz-phrase-host"></div>
     <div class="pz-btnrow">
       <button type="button" class="pz-btn-quiet" id="pz-back-4">Back</button>
@@ -323,8 +322,8 @@ var WORDS = [
 ];
 
 var PHRASES = [
-  { id: "howmuch", text: "How much is this?", type: "question", note: "The voice rises at the end — a friendly, open question." },
-  { id: "paycard",  text: "Can I pay by card?", type: "question", note: "This question also rises gently at the end — polite and clear." }
+  { id: "howmuch", text: "How much is this?", type: "wh-question", rising: false, note: "The voice falls at the end — the usual pattern for a \"how much\" question." },
+  { id: "paycard",  text: "Can I pay by card?", type: "yn-question", rising: true, note: "The voice rises at the end — the usual pattern for a yes/no question." }
 ];
 
 /* Seven official recordings were supplied and are embedded below exactly as
@@ -433,8 +432,16 @@ function stopActiveStream(){
   }
   activeStream = null;
 }
+/* Stops an in-progress recording (and releases the microphone) if the
+   learner navigates away — by Back, Continue, or Try again — without
+   pressing Stop first. Safe to call when nothing is recording. */
+function stopActiveRecording(){
+  if (activeRecorder && activeRecorder.state === "recording"){
+    try { activeRecorder.stop(); } catch(e){}
+  }
+}
 
-function buildRecordPanel(itemId, host){
+function buildRecordPanel(itemId, host, label){
   var panel = document.createElement("div");
   panel.className = "pz-record";
   panel.id = "pz-rec-" + itemId;
@@ -465,6 +472,17 @@ function buildRecordPanel(itemId, host){
   againBtn.textContent = "Try again";
   againBtn.disabled = true;
 
+  /* When more than one Record-and-compare panel is visible on the same
+     screen (Screen 4 shows both phrases at once), generic button names
+     like "Record" are ambiguous for screen-reader users, so give each
+     control a contextual label when one is supplied. */
+  if (label){
+    recBtn.setAttribute("aria-label", "Record: " + label);
+    stopBtn.setAttribute("aria-label", "Stop recording: " + label);
+    hearBtn.setAttribute("aria-label", "Hear my recording: " + label);
+    againBtn.setAttribute("aria-label", "Try again: " + label);
+  }
+
   row.appendChild(recBtn); row.appendChild(stopBtn);
   row.appendChild(hearBtn); row.appendChild(againBtn);
   panel.appendChild(row);
@@ -485,6 +503,7 @@ function buildRecordPanel(itemId, host){
     practisedBtn.type = "button";
     practisedBtn.className = "pz-btn-quiet";
     practisedBtn.textContent = "I practised";
+    if (label) practisedBtn.setAttribute("aria-label", "I practised: " + label);
     practisedBtn.addEventListener("click", function(){
       panel.dataset.attempted = "1";
       status.textContent = "Marked as practised.";
@@ -497,12 +516,22 @@ function buildRecordPanel(itemId, host){
 
   var localUrl = null, chunks = [], myGen = 0;
 
+  /* Also resets the buttons, not just the URL: without this, a panel whose
+     recording was revoked by screen navigation (see cleanupHost) would keep
+     "Hear my recording" visibly enabled while silently doing nothing. */
   function cleanupUrl(){
     if (localUrl){ try { URL.revokeObjectURL(localUrl); } catch(e){} localUrl = null; }
+    panel.pzRecUrl = null;
+    hearBtn.disabled = true;
+    againBtn.disabled = true;
   }
 
   recBtn.addEventListener("click", function(){
-    if (isRecordingActive()) return;
+    if (isRecordingActive() || recBtn.disabled) return;
+    /* Disabled synchronously, before the async permission prompt, so a
+       rapid double-tap cannot start two overlapping recordings while the
+       first getUserMedia() call is still pending. */
+    recBtn.disabled = true;
     stopAudio();
     navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
       var mime = recMimeType();
@@ -512,6 +541,7 @@ function buildRecordPanel(itemId, host){
       catch(e){
         stream.getTracks().forEach(function(t){ t.stop(); });
         status.textContent = "Recording could not start in this browser.";
+        recBtn.disabled = false;
         return;
       }
       activeGen++; myGen = activeGen;
@@ -525,10 +555,11 @@ function buildRecordPanel(itemId, host){
         if (!chunks.length){
           status.textContent = "The recording was empty. Please try again.";
           panel.dataset.attempted = "1";
+          recBtn.disabled = false; stopBtn.disabled = true;
           return;
         }
         var blob = new Blob(chunks, { type: mime || "audio/webm" });
-        cleanupUrl();
+        if (localUrl){ try { URL.revokeObjectURL(localUrl); } catch(e){} }
         localUrl = URL.createObjectURL(blob);
         panel.pzRecUrl = localUrl;
         panel.dataset.attempted = "1";
@@ -548,6 +579,7 @@ function buildRecordPanel(itemId, host){
       else if (err && err.name === "NotFoundError") msg = "No microphone was found. You can still read the word aloud.";
       status.textContent = msg;
       panel.dataset.attempted = "1";
+      recBtn.disabled = false;
     });
   });
 
@@ -568,8 +600,6 @@ function buildRecordPanel(itemId, host){
 
   againBtn.addEventListener("click", function(){
     cleanupUrl();
-    panel.pzRecUrl = null;
-    hearBtn.disabled = true; againBtn.disabled = true;
     status.textContent = "Recording cleared. Press Record to try again.";
   });
 
@@ -705,7 +735,7 @@ function renderWordPractice(){
   head.textContent = w.text + " — " + w.endSound;
   card.appendChild(head);
   host.appendChild(card);
-  buildRecordPanel("word-" + w.id, host);
+  buildRecordPanel("word-" + w.id, host, w.text);
 }
 function allWordsAttempted(){
   // The learner only needs to have made one genuine attempt across the
@@ -736,7 +766,7 @@ function buildPhraseHost(){
   PHRASES.forEach(function(p){
     var card = document.createElement("div");
     card.className = "pz-intonation";
-    card.innerHTML = intonationSvg(true);
+    card.innerHTML = intonationSvg(p.rising);
     var label = document.createElement("p");
     label.className = "pz-intonation-label";
     label.textContent = p.text;
@@ -759,7 +789,7 @@ function buildPhraseHost(){
       card.appendChild(listenRow);
     }
 
-    buildRecordPanel("phrase-" + p.id, card);
+    buildRecordPanel("phrase-" + p.id, card, p.text);
     host.appendChild(card);
   });
 }
@@ -799,7 +829,7 @@ function selectRetry(p, wrap){
   host.innerHTML = "";
   var card = document.createElement("div");
   card.className = "pz-intonation";
-  card.innerHTML = intonationSvg(true);
+  card.innerHTML = intonationSvg(p.rising);
   var label = document.createElement("p");
   label.className = "pz-intonation-label";
   label.textContent = p.text;
@@ -815,7 +845,7 @@ function selectRetry(p, wrap){
     listenRow.appendChild(listenBtn);
     card.appendChild(listenRow);
   }
-  buildRecordPanel("retry-" + p.id, card);
+  buildRecordPanel("retry-" + p.id, card, p.text);
   host.appendChild(card);
 }
 
@@ -826,6 +856,7 @@ var screens = ["pz-s1", "pz-s2", "pz-s3", "pz-s4", "pz-s5", "pz-s6"];
 var current = 0;
 
 function showScreen(i){
+  stopActiveRecording();
   cleanupHost($("pz-word-practice-host"));
   cleanupHost($("pz-phrase-host"));
   cleanupHost($("pz-retry-host"));
@@ -839,7 +870,13 @@ function showScreen(i){
   var el = $(screens[i]);
   el.setAttribute("tabindex", "-1");
   el.focus();
-  announce($("h1", el) ? "" : "");
+  var heading = el.querySelector("h1");
+  announce(heading ? heading.textContent : "");
+  /* The final screen is where Done must first become available; it stays
+     disabled again once the learner has actually pressed it. */
+  if (i === screens.length - 1 && !localComplete){
+    $("pz-done").disabled = false;
+  }
   window.scrollTo(0, 0);
 }
 
@@ -940,7 +977,7 @@ function init(){
 
   window.addEventListener("pagehide", function(){
     stopAudio();
-    if (activeRecorder && activeRecorder.state === "recording") { try { activeRecorder.stop(); } catch(e){} }
+    stopActiveRecording();
     stopActiveStream();
   });
   window.addEventListener("beforeunload", function(){
