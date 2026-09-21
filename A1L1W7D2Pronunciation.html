@@ -445,9 +445,14 @@ function buildRecordPanel(label, audioKey){
   panel.pzUrl = null; panel.pzChunks = []; panel.pzStream = null; panel.pzRecorder = null;
   allPanels.push(panel);
 
-  var privacy = el("p", "pz-privacy",
-    "Your recording stays on this device. It is never uploaded, and it is deleted when you leave this screen or press Try again.");
-  panel.appendChild(privacy);
+  /* The privacy note mentions "Try again" specifically, so it is only shown
+     when a Try again button actually exists on this panel (recording
+     supported) — otherwise it describes a control the learner can't see. */
+  if (recordingSupported()){
+    var privacy = el("p", "pz-privacy",
+      "Your recording stays on this device. It is never uploaded, and it is deleted when you leave this screen or press Try again.");
+    panel.appendChild(privacy);
+  }
 
   var row1 = el("div", "pz-btnrow");
   var listenBtn = el("button", "pz-btn-help", "Listen");
