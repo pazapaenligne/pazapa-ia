@@ -278,6 +278,7 @@ noscript p{background:var(--pz-yellow-20);border:2px solid var(--pazapa-yellow);
       <div class="pz-btnrow">
         <button type="button" class="pz-btn-primary" data-continue="1">Continue</button>
       </div>
+      <p class="pz-status pz-continue-status" role="status" aria-live="polite"></p>
     </section>
 
     <!-- ============ SCREEN 4 — USEFUL PHRASE PRACTICE ============ -->
@@ -289,6 +290,7 @@ noscript p{background:var(--pz-yellow-20);border:2px solid var(--pazapa-yellow);
       <div class="pz-btnrow">
         <button type="button" class="pz-btn-primary" data-continue="1">Continue</button>
       </div>
+      <p class="pz-status pz-continue-status" role="status" aria-live="polite"></p>
     </section>
 
     <!-- ============ SCREEN 5 — PERSONAL RETRY ============ -->
@@ -310,6 +312,7 @@ noscript p{background:var(--pz-yellow-20);border:2px solid var(--pazapa-yellow);
       <div class="pz-btnrow">
         <button type="button" class="pz-btn-primary" data-continue="1">Continue</button>
       </div>
+      <p class="pz-status pz-continue-status" role="status" aria-live="polite"></p>
     </section>
 
     <!-- ============ SCREEN 6 — COMPLETION ============ -->
@@ -329,6 +332,9 @@ noscript p{background:var(--pz-yellow-20);border:2px solid var(--pazapa-yellow);
       <p class="pz-status" id="pz-done-status" role="status" aria-live="polite"></p>
       <div class="pz-btnrow" id="pz-next-wrap" hidden>
         <button type="button" id="pz-next-activity" class="pz-btn-primary">Go to the next activity</button>
+      </div>
+      <div class="pz-btnrow">
+        <button type="button" id="pz-restart" class="pz-btn-quiet">Try again</button>
       </div>
     </section>
 
@@ -1265,14 +1271,18 @@ function requirementMessageForScreen(i){
 }
 /* Called after every recording attempt and every screen change, so the
    Continue button's disabled state is always in sync with what has
-   actually been recorded — never only checked at the moment of a click. */
+   actually been recorded — never only checked at the moment of a click.
+   The reason (if any) is written directly under that screen's own
+   Continue button, not into a status region elsewhere on the page, so a
+   blocked learner can actually see why without scrolling. */
 function refreshContinueStatus(){
   var sec = document.getElementById(screens[current]);
   if (!sec) return;
   var msg = requirementMessageForScreen(current);
   var btns = sec.querySelectorAll("[data-continue]");
   for (var i = 0; i < btns.length; i++){ btns[i].disabled = !!msg; }
-  setNavStatus(msg);
+  var local = sec.querySelector(".pz-continue-status");
+  if (local) local.textContent = msg || "";
 }
 
 function showScreen(i){
@@ -1305,7 +1315,6 @@ function goForward(){
     refreshContinueStatus();
     return;
   }
-  setNavStatus("");
   showScreen(current + 1);
 }
 function setNavStatus(text){
@@ -1404,9 +1413,13 @@ function init(){
         if (lms){ commitToScorm(lms); }
         completionSent = true;
         saveProgress();
-        revealNextActivity();
         console.log("W04D3 Pronunciation Clinic completed");
       }
+      /* Outside the one-time block above (not inside it): after Try again
+         resets pz-next-wrap to hidden, a second Done press must still be
+         able to reveal it again, even though completionSent itself must
+         never be re-sent. */
+      revealNextActivity();
       setDoneStatus();
     });
   }
@@ -1423,6 +1436,45 @@ function init(){
   if (nextBtn){
     nextBtn.addEventListener("click", function(){
       if (isSafeUrl(CONFIG.nextActivityUrl, false)) window.location.href = CONFIG.nextActivityUrl;
+    });
+  }
+
+  /* Try again: re-does the practice from Screen 1. This never touches
+     completion — completionSent, once true, stays true, and a real LMS
+     completion already committed is never re-sent or downgraded; Try
+     again only resets what the learner can redo (recordings, the chosen
+     retry phrase, the self-check chips, the word switcher). */
+  var restartBtn = document.getElementById("pz-restart");
+  if (restartBtn){
+    restartBtn.addEventListener("click", function(){
+      recordingAttempted = {};
+      retryChoice = null;
+      wordPracticeIndex = 0;
+
+      var wordNav = document.getElementById("pz-word-nav");
+      if (wordNav) wordNav.innerHTML = "";
+      var wordHost = document.getElementById("pz-word-practice-host");
+      if (wordHost) wordHost.innerHTML = "";
+      buildScreen3();
+
+      var phraseHost = document.getElementById("pz-phrase-host");
+      if (phraseHost) phraseHost.innerHTML = "";
+      buildScreen4();
+
+      var retryChoiceRow = document.getElementById("pz-retry-choice");
+      if (retryChoiceRow) retryChoiceRow.innerHTML = "";
+      var retryHost = document.getElementById("pz-retry-host");
+      if (retryHost) retryHost.innerHTML = "";
+      var selfcheck = document.getElementById("pz-selfcheck");
+      if (selfcheck) selfcheck.hidden = true;
+      buildScreen5();
+
+      var doneStatus = document.getElementById("pz-done-status");
+      if (doneStatus) doneStatus.textContent = "";
+      var nextWrap = document.getElementById("pz-next-wrap");
+      if (nextWrap) nextWrap.hidden = true;
+
+      showScreen(0);
     });
   }
 
