@@ -545,7 +545,7 @@ button[disabled]:hover{background:#FFFFFF;}
    ========================================================================= */
 var CONFIG = {
   activityId: "A1_W02D3_S3_PronunciationClinic_MakingArrangements",
-  feedbackEndpoint: "",   /* empty on purpose: AI feedback is not offered in this build */
+  feedbackEndpoint: "https://pazapa-ia.netlify.app/.netlify/functions/pronunciation-feedback",   /* secure AI feedback endpoint */
   requestTimeoutMs: 12000,
   nextActivityUrl: "",
   logoUrl: ""
@@ -918,6 +918,210 @@ function setupRecordPanel(panel){
 }
 
 document.querySelectorAll(".pz-record").forEach(setupRecordPanel);
+
+/* ============================================================================
+   AI SPEAKING FEEDBACK — browser speech recognition only.
+   The learner's recorded audio stays local. Only the recognised words and
+   target phrase are sent to the secure feedback endpoint.
+   ========================================================================= */
+(function setupAiSpeakingFeedback(){
+  var SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var AI_RECOGNITION_TIMEOUT_MS = 12000;
+
+  function safeEndpoint(value){
+    try {
+      var u = new URL(value, window.location.href);
+      return u.protocol === "https:" ? u.href : "";
+    } catch(e){
+      return "";
+    }
+  }
+
+  function targetForPanel(panel, selector){
+    var key = panel.getAttribute("data-record-panel");
+    if (key === "s2word"){
+      return selector ? selector.value : "available";
+    }
+    if (key === "s3full"){
+      return "Are you available on Monday?";
+    }
+    if (key === "s4nadia"){
+      return "Sorry, I'm busy. How about Thursday at five?";
+    }
+    if (key === "s5retry"){
+      var checked = document.querySelector('input[name="pz-retry-phrase"]:checked');
+      return checked ? checked.value : "Are you available on Monday?";
+    }
+    return panel.getAttribute("data-record-label") || "";
+  }
+
+  function requestAiFeedback(targetPhrase, recognisedText, out, button){
+    var url = safeEndpoint(CONFIG.feedbackEndpoint);
+    if (!url){
+      out.textContent = "AI feedback is not available right now. You can carry on.";
+      button.disabled = false;
+      return;
+    }
+
+    var controller = ("AbortController" in window) ? new AbortController() : null;
+    var timedOut = false;
+    var timer = setTimeout(function(){
+      timedOut = true;
+      if (controller) controller.abort();
+    }, CONFIG.requestTimeoutMs || 10000);
+
+    fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        targetPhrase: targetPhrase,
+        recognisedText: recognisedText
+      }),
+      signal: controller ? controller.signal : undefined
+    }).then(function(resp){
+      if (!resp.ok) throw new Error("bad status");
+      return resp.json();
+    }).then(function(data){
+      clearTimeout(timer);
+      button.disabled = false;
+      var message = "";
+      if (data && typeof data.message === "string") message = data.message;
+      else if (data && typeof data.feedback === "string") message = data.feedback;
+      else if (data && data.state === "match") message = "Your words matched the model phrase.";
+      else if (data && (data.state === "try_again" || data.state === "try")) message = "Good try. Try the phrase once more.";
+      else if (data && data.state === "unclear") message = "The words were not clear enough to compare. Listen and try again, or carry on.";
+      else message = "Feedback received. You can listen and try again if you want.";
+      out.textContent = message;
+    }).catch(function(){
+      clearTimeout(timer);
+      button.disabled = false;
+      out.textContent = timedOut
+        ? "AI feedback timed out. You can carry on without it."
+        : "AI feedback is unavailable right now. You can carry on without it.";
+    });
+  }
+
+  document.querySelectorAll(".pz-record").forEach(function(panel){
+    var wrap = document.createElement("div");
+    wrap.setAttribute("data-ai-speaking", "");
+    wrap.style.marginTop = "14px";
+
+    var selector = null;
+    if (panel.getAttribute("data-record-panel") === "s2word"){
+      var choose = document.createElement("label");
+      choose.textContent = "Choose the word for AI feedback: ";
+      choose.style.display = "block";
+      choose.style.marginBottom = "8px";
+
+      selector = document.createElement("select");
+      selector.setAttribute("aria-label", "Choose the word for AI feedback");
+      selector.style.minHeight = "48px";
+      selector.style.font = "inherit";
+      ["available", "busy", "appointment"].forEach(function(word){
+        var option = document.createElement("option");
+        option.value = word;
+        option.textContent = word;
+        selector.appendChild(option);
+      });
+      choose.appendChild(selector);
+      wrap.appendChild(choose);
+    }
+
+    var note = document.createElement("p");
+    note.className = "pz-rec-status";
+    note.innerHTML = "<strong>Please note:</strong> To receive AI feedback, you must complete this exercise on a computer, as the AI feedback feature may not work on all mobile devices.";
+    wrap.appendChild(note);
+
+    var row = document.createElement("div");
+    row.className = "pz-btnrow";
+
+    var button = document.createElement("button");
+    button.type = "button";
+    button.className = "pz-btn-help";
+    button.textContent = "Practise speaking";
+    row.appendChild(button);
+    wrap.appendChild(row);
+
+    var out = document.createElement("p");
+    out.className = "pz-rec-status";
+    out.setAttribute("role", "status");
+    out.setAttribute("aria-live", "polite");
+    wrap.appendChild(out);
+
+    if (!SpeechRecognitionCtor){
+      button.disabled = true;
+      out.textContent = "AI speaking feedback is not supported in this browser. Record and compare still works.";
+    } else {
+      button.addEventListener("click", function(){
+        var targetPhrase = targetForPanel(panel, selector);
+        if (!targetPhrase) return;
+
+        button.disabled = true;
+        out.textContent = "Listening… Say the phrase once.";
+
+        var recognition = new SpeechRecognitionCtor();
+        recognition.lang = "en-GB";
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+        var finished = false;
+
+        var watchdog = setTimeout(function(){
+          if (finished) return;
+          finished = true;
+          try { recognition.stop(); } catch(e){}
+          button.disabled = false;
+          out.textContent = "I could not hear enough words. Try again, or carry on.";
+        }, AI_RECOGNITION_TIMEOUT_MS);
+
+        recognition.onresult = function(event){
+          if (finished) return;
+          finished = true;
+          clearTimeout(watchdog);
+          var recognisedText = "";
+          try {
+            recognisedText = event.results[0][0].transcript || "";
+          } catch(e){}
+          if (!recognisedText.trim()){
+            button.disabled = false;
+            out.textContent = "I could not hear enough words. Try again, or carry on.";
+            return;
+          }
+          out.textContent = "Checking your words…";
+          requestAiFeedback(targetPhrase, recognisedText.trim(), out, button);
+        };
+
+        recognition.onerror = function(){
+          if (finished) return;
+          finished = true;
+          clearTimeout(watchdog);
+          button.disabled = false;
+          out.textContent = "AI speaking feedback is unavailable right now. Record and compare still works.";
+        };
+
+        recognition.onend = function(){
+          if (!finished){
+            finished = true;
+            clearTimeout(watchdog);
+            button.disabled = false;
+            out.textContent = "I could not hear enough words. Try again, or carry on.";
+          }
+        };
+
+        try {
+          recognition.start();
+        } catch(e){
+          finished = true;
+          clearTimeout(watchdog);
+          button.disabled = false;
+          out.textContent = "AI speaking feedback is unavailable right now. Record and compare still works.";
+        }
+      });
+    }
+
+    panel.appendChild(wrap);
+  });
+})();
+
 
 function cleanupAllRecordings(){
   document.querySelectorAll(".pz-record").forEach(function(panel){
