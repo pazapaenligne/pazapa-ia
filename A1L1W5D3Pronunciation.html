@@ -446,7 +446,7 @@ button[disabled]:hover{background:#FFFFFF;}
    ========================================================================= */
 var CONFIG = {
   activityId: "A1_W05D3_STEP3_PRONUNCIATION_SHOPPING",
-  feedbackEndpoint: "",          /* empty = AI feedback stays off. Never a fabricated URL. */
+  feedbackEndpoint: "https://pazapa-ia.netlify.app/.netlify/functions/pronunciation-feedback",          /* secure AI feedback endpoint */
   requestTimeoutMs: 15000,
   nextActivityUrl: "A1_W05D3_STEP4_BUILD_USEFUL_ENGLISH.html",
   logoUrl: ""                     /* leave empty to use the embedded logo below */
@@ -995,15 +995,20 @@ function sendFeedback(target, said, resultEl, btn){
   fetch(CONFIG.feedbackEndpoint, {
     method: "POST",
     headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({targetPhrase: target, recognisedText: said, activityId: CONFIG.activityId}),
+    body: JSON.stringify({targetPhrase: target, recognisedText: said}),
     signal: ctrl ? ctrl.signal : undefined
-  }).then(function(r){ return r.json(); }).then(function(data){
+  }).then(function(r){
+    if (!r.ok) throw new Error("feedback");
+    return r.json();
+  }).then(function(data){
     window.clearTimeout(t);
-    var norm = function(s){ return (s||"").toLowerCase().replace(/[^a-z ]/g,"").trim(); };
-    var match = norm(said) === norm(target);
-    resultEl.textContent = (data && typeof data.matched === "boolean") ?
-      (data.matched ? "Your words matched." : "Try once more.") :
-      (match ? "Your words matched." : "Try once more.");
+    var status = data && data.status;
+    var message = data && typeof data.message === "string" ? data.message.replace(/\s+/g," ").trim().slice(0,160) : "";
+    if ((status === "match" || status === "try_again" || status === "unclear") && message){
+      resultEl.textContent = message;
+    } else {
+      resultEl.textContent = "Feedback unavailable.";
+    }
     btn.disabled = false;
   }).catch(function(){
     window.clearTimeout(t);
