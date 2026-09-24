@@ -331,7 +331,7 @@ button[disabled]:hover{background:#FFFFFF;}
    CONFIG — no key/secret ever belongs here.
    ========================================================================= */
 var CONFIG = {
-  feedbackEndpoint: "",     // left empty: no real secure endpoint supplied
+  feedbackEndpoint: "https://pazapa-ia.netlify.app/.netlify/functions/pronunciation-feedback",     // secure AI feedback endpoint
   requestTimeoutMs: 12000,
   activityId: "A1_W03D3_STEP3_PRONUNCIATION_CLINIC"
 };
@@ -681,12 +681,12 @@ function sendFeedback(expected, recognised, statusEl){
   if (!feedbackConfigured()){ statusEl.textContent = "Feedback unavailable."; return; }
   var controller = new AbortController();
   var timer = setTimeout(function(){ controller.abort(); }, CONFIG.requestTimeoutMs);
-  var fd = new FormData();
-  fd.append("expectedPhrase", expected);
-  fd.append("recognisedText", recognised);
-  fd.append("locale", "en-GB");
-  fd.append("activityId", CONFIG.activityId);
-  fetch(CONFIG.feedbackEndpoint, { method: "POST", body: fd, signal: controller.signal })
+  fetch(CONFIG.feedbackEndpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ targetPhrase: expected, recognisedText: recognised }),
+    signal: controller.signal
+  })
     .then(function(r){ return r.json(); })
     .then(function(data){
       clearTimeout(timer);
