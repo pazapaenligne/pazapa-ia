@@ -346,7 +346,7 @@ button[disabled]:hover{background:#FFFFFF;}
    file, so Get AI feedback never renders. Nothing here is a secret.
    ========================================================================= */
 var CONFIG = {
-  feedbackEndpoint: "",
+  feedbackEndpoint: "https://pazapa-ia.netlify.app/.netlify/functions/pronunciation-feedback",
   requestTimeoutMs: 12000,
   activityId: "A1_W06D1_STEP3_PRONUNCIATION_MEALS"
 };
@@ -362,6 +362,144 @@ function isSafeEndpoint(value){
   if (u.search !== "" || u.hash !== "") return false;
   if (u.username !== "" || u.password !== "") return false;
   return true;
+}
+
+/* ============================================================================
+   AI FEEDBACK — recognised text only, never Record-and-compare audio
+   ========================================================================= */
+var SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+var activeRecognition = null;
+var recognitionTimer = null;
+var RECOGNITION_TIMEOUT_MS = 12000;
+
+function aiAvailable(){
+  return feedbackEnabled() && !!SpeechRecognitionCtor;
+}
+function stopAiRecognition(){
+  if (recognitionTimer){
+    clearTimeout(recognitionTimer);
+    recognitionTimer = null;
+  }
+  if (!activeRecognition) return;
+  try {
+    activeRecognition.onresult = null;
+    activeRecognition.onerror = null;
+    activeRecognition.onend = null;
+  } catch(e){}
+  try { activeRecognition.abort(); } catch(e){}
+  activeRecognition = null;
+}
+function cleanAiText(value, maxLength){
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, maxLength);
+}
+function requestAiFeedback(targetPhrase, recognisedText, statusEl, button){
+  statusEl.textContent = "Comparing your words with the model…";
+
+  var controller = (typeof AbortController === "function") ? new AbortController() : null;
+  var timeout = setTimeout(function(){
+    if (controller) controller.abort();
+  }, CONFIG.requestTimeoutMs);
+
+  var options = {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      targetPhrase: targetPhrase,
+      recognisedText: recognisedText
+    })
+  };
+  if (controller) options.signal = controller.signal;
+
+  fetch(CONFIG.feedbackEndpoint, options)
+    .then(function(response){
+      if (!response.ok) throw new Error("feedback");
+      return response.json();
+    })
+    .then(function(data){
+      clearTimeout(timeout);
+      var status = data && data.status;
+      var message = data && typeof data.message === "string"
+        ? cleanAiText(data.message, 160) : "";
+
+      if ((status === "match" || status === "try_again" || status === "unclear") && message){
+        statusEl.textContent = message;
+      } else {
+        statusEl.textContent = "AI feedback is unavailable right now. Listen and try again, or carry on.";
+      }
+      button.disabled = false;
+      button.textContent = "Get AI feedback";
+    })
+    .catch(function(){
+      clearTimeout(timeout);
+      statusEl.textContent = "AI feedback is unavailable right now. Listen and try again, or carry on.";
+      button.disabled = false;
+      button.textContent = "Get AI feedback";
+    });
+}
+function startAiFeedback(targetPhrase, statusEl, button){
+  if (!aiAvailable()) return;
+
+  stopAudio();
+  stopRecording_activeGuard();
+  stopAiRecognition();
+
+  var recognition;
+  try { recognition = new SpeechRecognitionCtor(); }
+  catch(e){ return; }
+
+  activeRecognition = recognition;
+  recognition.lang = "en-GB";
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  var finished = false;
+  var transcript = "";
+
+  button.disabled = true;
+  button.textContent = "Listening…";
+  statusEl.textContent = "Say the sentence once.";
+
+  recognition.onresult = function(event){
+    if (event.results && event.results[0] && event.results[0][0]){
+      transcript = cleanAiText(event.results[0][0].transcript, 300);
+    }
+  };
+  recognition.onerror = function(){
+    if (finished) return;
+    finished = true;
+    button.disabled = false;
+    button.textContent = "Get AI feedback";
+    statusEl.textContent = "No worries! I couldn't compare the words clearly this time. Listen once more and try again when you're ready.";
+    stopAiRecognition();
+  };
+  recognition.onend = function(){
+    if (finished) return;
+    finished = true;
+    button.disabled = false;
+    button.textContent = "Get AI feedback";
+
+    if (!transcript){
+      statusEl.textContent = "No worries! I couldn't compare the words clearly this time. Listen once more and try again when you're ready.";
+      stopAiRecognition();
+      return;
+    }
+
+    stopAiRecognition();
+    requestAiFeedback(targetPhrase, transcript, statusEl, button);
+  };
+
+  recognitionTimer = setTimeout(function(){
+    try { recognition.stop(); } catch(e){}
+  }, RECOGNITION_TIMEOUT_MS);
+
+  try { recognition.start(); }
+  catch(e){
+    finished = true;
+    button.disabled = false;
+    button.textContent = "Get AI feedback";
+    stopAiRecognition();
+  }
 }
 
 /* ============================================================================
@@ -832,9 +970,12 @@ function buildPhraseScreen(){
   }
   host.appendChild(panel);
 
-  if (feedbackEnabled()){
+  if (aiAvailable()){
     var aiBtn = el("button", { type:"button", class:"pz-btn-help", text:"Get AI feedback" });
+    var aiStatus = el("p", { class:"pz-rec-status", role:"status", "aria-live":"polite" });
+    aiBtn.addEventListener("click", function(){ startAiFeedback(p.text, aiStatus, aiBtn); });
     host.appendChild(el("div", { class:"pz-btnrow" }, [aiBtn]));
+    host.appendChild(aiStatus);
   }
 
   document.getElementById("pz-phrase-prev").disabled = (phraseIndex === 0);
@@ -884,9 +1025,12 @@ function buildRetryPractice(){
   retryPanel = panel;
   host.appendChild(panel);
 
-  if (feedbackEnabled()){
+  if (aiAvailable()){
     var aiBtn = el("button", { type:"button", class:"pz-btn-help", text:"Get AI feedback" });
+    var aiStatus = el("p", { class:"pz-rec-status", role:"status", "aria-live":"polite" });
+    aiBtn.addEventListener("click", function(){ startAiFeedback(p.text, aiStatus, aiBtn); });
     host.appendChild(el("div", { class:"pz-btnrow" }, [aiBtn]));
+    host.appendChild(aiStatus);
   }
 }
 
@@ -897,6 +1041,7 @@ function buildRetryPractice(){
 var SCREEN_ORDER = ["pz-s0","pz-s1","pz-s2","pz-s3","pz-s4","pz-s5","pz-s6"];
 
 function showScreen(id){
+  stopAiRecognition();
   SCREEN_ORDER.forEach(function(sid){
     var sec = document.getElementById(sid);
     if (sec) sec.hidden = (sid !== id);
@@ -941,6 +1086,7 @@ function setDoneStatus(){
 /* Resets every screen and every recording, then returns to the start so the
    clinic can be done again without reloading the page. */
 function resetActivity(){
+  stopAiRecognition();
   stopRecording_activeGuard();
   stopAudio();
 
