@@ -363,7 +363,7 @@ var CONFIG = {
   /* Empty by default. Get AI feedback stays hidden until a real https
      endpoint is supplied. https only, no localhost, no query, no fragment,
      no credentials — enforced by isSafeEndpoint(). */
-  feedbackEndpoint: "",
+  feedbackEndpoint: "https://pazapa-ia.netlify.app/.netlify/functions/pronunciation-feedback",
   feedbackTimeoutMs: 10000
 };
 
@@ -708,8 +708,7 @@ function requestFeedback(targetText, panel, recognisedText){
   var opts = {
     method:"POST",
     headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ targetPhrase: targetText, recognisedText: recognisedText,
-                            locale:"en-GB", activityId: CONFIG.activityId }),
+    body: JSON.stringify({ targetPhrase: targetText, recognisedText: recognisedText }),
     cache:"no-store", credentials:"omit", referrerPolicy:"no-referrer"
   };
   if (ctrl) opts.signal = ctrl.signal;
