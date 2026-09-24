@@ -481,7 +481,7 @@ var CONFIG = {
   /* Left empty on purpose. Get AI feedback stays disabled everywhere until an
      administrator supplies a real HTTPS endpoint. Recording and playback work
      fully without it. */
-  feedbackEndpoint: "",
+  feedbackEndpoint: "https://pazapa-ia.netlify.app/.netlify/functions/pronunciation-feedback",
   requestTimeoutMs: 12000,
   activityId: "A1_W03D1_STEP3_PRONUNCIATION_CLINIC"
 };
@@ -924,9 +924,9 @@ function buildRecordPanel(id){
 }
 
 /* ============================================================================
-   AI FEEDBACK — disabled by default (no endpoint configured). Implemented in
-   full and guarded behind isSafeEndpoint so an administrator can switch it on
-   later without touching this code.
+   AI FEEDBACK — browser speech recognition only.
+   Record-and-compare audio remains local. Only the recognised words and the
+   target phrase are sent to the secure feedback endpoint.
    ========================================================================= */
 var aiBusy = {};
 function buildAiPanel(id, targetPhrase){
@@ -934,81 +934,160 @@ function buildAiPanel(id, targetPhrase){
   var row = el("div", "pz-btnrow");
   var btn = document.createElement("button");
   btn.type = "button"; btn.className = "pz-btn-help";
-  btn.textContent = "Get AI feedback";
-  var enabled = isSafeEndpoint(CONFIG.feedbackEndpoint);
-  btn.disabled = !enabled;
+  btn.textContent = "Practise speaking";
   row.appendChild(btn);
   wrap.appendChild(row);
-  var note = el("p", "pz-label", enabled ?
-    "Feedback compares your recording to the target sentence. It never grades your accent." :
-    "AI feedback is not switched on for this activity yet. Recording and listening back still work fully.");
+
+  var note = el("p", "pz-label");
+  note.innerHTML = "<strong>Please note:</strong> To receive AI feedback, you must complete this exercise on a computer, as the AI feedback feature may not work on all mobile devices.";
   wrap.appendChild(note);
+
   var out = el("div"); out.id = "pz-ai-out-" + id;
   wrap.appendChild(out);
 
+  var SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var endpoint = isSafeEndpoint(CONFIG.feedbackEndpoint);
+  if (!SpeechRecognitionCtor || !endpoint){
+    btn.disabled = true;
+    var unavailable = el("p", "pz-status",
+      !SpeechRecognitionCtor
+        ? "AI speaking feedback is not supported in this browser. Record and compare still works."
+        : "AI feedback is not available right now. Record and compare still works.");
+    out.appendChild(unavailable);
+    return wrap;
+  }
+
   btn.addEventListener("click", function(){
-    if (!enabled || aiBusy[id]) return;
-    var panel = document.getElementById("pz-rec-" + id);
-    if (!panel || !panel.pzRecording){
-      out.textContent = "Record your voice first, then ask for feedback.";
-      return;
-    }
+    if (aiBusy[id]) return;
     aiBusy[id] = true;
     btn.disabled = true;
     out.textContent = "";
-    var status = el("p", "pz-fb pz-fb-unclear");
-    status.textContent = "Sending your recording…";
-    out.appendChild(status);
 
-    var controller = ("AbortController" in window) ? new AbortController() : null;
-    var timedOut = false;
-    var timer = setTimeout(function(){
-      timedOut = true;
-      if (controller) controller.abort();
-    }, CONFIG.requestTimeoutMs);
+    var listening = el("p", "pz-status", "Listening… Say the word or sentence once.");
+    out.appendChild(listening);
 
-    fetch(panel.pzRecUrl).then(function(r){ return r.blob(); }).then(function(blob){
-      var fd = new FormData();
-      fd.append("audio", blob, id + ".webm");
-      fd.append("targetPhrase", targetPhrase);
-      fd.append("locale", "en-GB");
-      fd.append("activityId", CONFIG.activityId);
-      return fetch(CONFIG.feedbackEndpoint, { method:"POST", body: fd, signal: controller ? controller.signal : undefined });
-    }).then(function(resp){
-      if (!resp.ok) throw new Error("bad status");
-      return resp.json();
-    }).then(function(data){
-      clearTimeout(timer);
-      aiBusy[id] = false; btn.disabled = !enabled;
+    var recognition = new SpeechRecognitionCtor();
+    recognition.lang = "en-GB";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    var finished = false;
+
+    var watchdog = setTimeout(function(){
+      if (finished) return;
+      finished = true;
+      try { recognition.stop(); } catch(e){}
+      aiBusy[id] = false;
+      btn.disabled = false;
       out.textContent = "";
-      if (!data || typeof data.state !== "string"){
-        var bad = el("p", "pz-fb pz-fb-unclear");
-        bad.textContent = "Feedback unavailable right now.";
-        out.appendChild(bad);
+      out.appendChild(el("p", "pz-fb pz-fb-unclear",
+        "I could not hear enough words. Try again, or carry on."));
+    }, 12000);
+
+    recognition.onresult = function(event){
+      if (finished) return;
+      finished = true;
+      clearTimeout(watchdog);
+
+      var recognisedText = "";
+      try { recognisedText = event.results[0][0].transcript || ""; } catch(e){}
+      if (!recognisedText.trim()){
+        aiBusy[id] = false;
+        btn.disabled = false;
+        out.textContent = "";
+        out.appendChild(el("p", "pz-fb pz-fb-unclear",
+          "I could not hear enough words. Try again, or carry on."));
         return;
       }
-      var cls = data.state === "match" ? "pz-fb-match" : (data.state === "try" ? "pz-fb-try" : "pz-fb-unclear");
-      var box = el("div", "pz-fb " + cls);
-      var stateLine = el("p", "pz-fb-state");
-      stateLine.textContent = ""; // set via textContent below, never innerHTML
-      stateLine.textContent = data.state === "match" ? "Your words matched." :
-        data.state === "try" ? "Try once more." : "Not clear enough to compare.";
-      box.appendChild(stateLine);
-      if (typeof data.message === "string"){
-        var msg = el("p", "pz-fb-msg");
-        msg.textContent = data.message.slice(0, 300);
-        box.appendChild(msg);
-      }
-      out.appendChild(box);
-    }).catch(function(){
-      clearTimeout(timer);
-      aiBusy[id] = false; btn.disabled = !enabled;
+
       out.textContent = "";
-      var err = el("p", "pz-fb pz-fb-unclear");
-      err.textContent = timedOut ? "Feedback timed out. You can carry on without it." :
-        "Feedback unavailable right now. You can carry on without it.";
-      out.appendChild(err);
-    });
+      out.appendChild(el("p", "pz-status", "Checking your words…"));
+
+      var controller = ("AbortController" in window) ? new AbortController() : null;
+      var timedOut = false;
+      var timer = setTimeout(function(){
+        timedOut = true;
+        if (controller) controller.abort();
+      }, CONFIG.requestTimeoutMs);
+
+      fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetPhrase: targetPhrase,
+          recognisedText: recognisedText.trim()
+        }),
+        signal: controller ? controller.signal : undefined
+      }).then(function(resp){
+        if (!resp.ok) throw new Error("bad status");
+        return resp.json();
+      }).then(function(data){
+        clearTimeout(timer);
+        aiBusy[id] = false;
+        btn.disabled = false;
+        out.textContent = "";
+
+        var state = data && typeof data.state === "string" ? data.state : "";
+        var cls = state === "match" ? "pz-fb-match" :
+          ((state === "try_again" || state === "try") ? "pz-fb-try" : "pz-fb-unclear");
+        var box = el("div", "pz-fb " + cls);
+
+        var message = "";
+        if (data && typeof data.message === "string") message = data.message;
+        else if (data && typeof data.feedback === "string") message = data.feedback;
+        else if (state === "match") message = "Your words matched the model phrase.";
+        else if (state === "try_again" || state === "try") message = "Good try. Try the phrase once more.";
+        else if (state === "unclear") message = "The words were not clear enough to compare. Listen and try again, or carry on.";
+        else message = "Feedback received. You can listen and try again if you want.";
+
+        var msg = el("p", "pz-fb-msg", message);
+        box.appendChild(msg);
+        out.appendChild(box);
+      }).catch(function(){
+        clearTimeout(timer);
+        aiBusy[id] = false;
+        btn.disabled = false;
+        out.textContent = "";
+        out.appendChild(el("p", "pz-fb pz-fb-unclear",
+          timedOut
+            ? "AI feedback timed out. You can carry on without it."
+            : "AI feedback is unavailable right now. You can carry on without it."));
+      });
+    };
+
+    recognition.onerror = function(){
+      if (finished) return;
+      finished = true;
+      clearTimeout(watchdog);
+      aiBusy[id] = false;
+      btn.disabled = false;
+      out.textContent = "";
+      out.appendChild(el("p", "pz-fb pz-fb-unclear",
+        "AI speaking feedback is unavailable right now. Record and compare still works."));
+    };
+
+    recognition.onend = function(){
+      if (!finished){
+        finished = true;
+        clearTimeout(watchdog);
+        aiBusy[id] = false;
+        btn.disabled = false;
+        out.textContent = "";
+        out.appendChild(el("p", "pz-fb pz-fb-unclear",
+          "I could not hear enough words. Try again, or carry on."));
+      }
+    };
+
+    try {
+      recognition.start();
+    } catch(e){
+      finished = true;
+      clearTimeout(watchdog);
+      aiBusy[id] = false;
+      btn.disabled = false;
+      out.textContent = "";
+      out.appendChild(el("p", "pz-fb pz-fb-unclear",
+        "AI speaking feedback is unavailable right now. Record and compare still works."));
+    }
   });
 
   return wrap;
@@ -1039,6 +1118,7 @@ function buildWordPractice(){
     var recPanel = buildRecordPanel(w.id);
     recPanel.pzLabel = w.word;
     card.appendChild(recPanel);
+    card.appendChild(buildAiPanel(w.id, w.word));
     host.appendChild(card);
   });
 }
@@ -1113,6 +1193,7 @@ function buildRetryHost(){
     var recPanel = buildRecordPanel(p.key + "-retry");
     recPanel.pzLabel = p.text;
     card.appendChild(recPanel);
+    card.appendChild(buildAiPanel(p.key + "-retry", p.text));
     host.appendChild(card);
   }
   var radios = document.querySelectorAll("input[name='pz-retry']");
