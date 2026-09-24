@@ -316,7 +316,7 @@ button[disabled]:hover{background:#FFFFFF;}
    No API key or secret ever appears in this file.
    ========================================================================= */
 var CONFIG = {
-  feedbackEndpoint: "",      /* left empty until a real secure endpoint is supplied */
+  feedbackEndpoint: "https://pazapa-ia.netlify.app/.netlify/functions/pronunciation-feedback",      /* secure AI feedback endpoint */
   requestTimeoutMs: 15000,
   activityId: "PZA-A1-W05D1-S3-SHOPPING-FOOD",
   nextActivityUrl: ""        /* left empty until Moodle supplies the real link */
@@ -687,16 +687,159 @@ function cleanupAllRecordings(){
 }
 
 /* ============================================================================
-   AI FEEDBACK — dormant while CONFIG.feedbackEndpoint is empty. Never sends
-   audio: only recognised or typed text would ever be sent, and only after an
-   explicit learner action.
+   AI FEEDBACK — recognised text only, never Record-and-compare audio
    ========================================================================= */
+var SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+var activeRecognition = null;
+var recognitionTimer = null;
+var RECOGNITION_TIMEOUT_MS = 12000;
+
+function stopAiRecognition(){
+  if (recognitionTimer){
+    clearTimeout(recognitionTimer);
+    recognitionTimer = null;
+  }
+  if (!activeRecognition) return;
+  try {
+    activeRecognition.onresult = null;
+    activeRecognition.onerror = null;
+    activeRecognition.onend = null;
+  } catch(e){}
+  try { activeRecognition.abort(); } catch(e){}
+  activeRecognition = null;
+}
+
+function cleanAiText(value, maxLength){
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, maxLength);
+}
+
+function requestAiFeedback(targetPhrase, recognisedText, status, btn){
+  status.textContent = "Comparing your words with the model…";
+
+  var controller = (typeof AbortController === "function") ? new AbortController() : null;
+  var timer = setTimeout(function(){
+    if (controller) controller.abort();
+  }, CONFIG.requestTimeoutMs);
+
+  var options = {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      targetPhrase: targetPhrase,
+      recognisedText: recognisedText
+    })
+  };
+  if (controller) options.signal = controller.signal;
+
+  fetch(CONFIG.feedbackEndpoint, options)
+    .then(function(res){
+      if (!res.ok) throw new Error("bad status");
+      return res.json();
+    })
+    .then(function(data){
+      clearTimeout(timer);
+      var state = data && data.status;
+      var message = data && typeof data.message === "string"
+        ? cleanAiText(data.message, 160)
+        : "";
+
+      if ((state === "match" || state === "try_again" || state === "unclear") && message){
+        status.textContent = message;
+      } else {
+        status.textContent = "AI feedback is unavailable right now. Listen and try again, or carry on.";
+      }
+    })
+    .catch(function(){
+      clearTimeout(timer);
+      status.textContent = "AI feedback is unavailable right now. Listen and try again, or carry on.";
+    })
+    .finally(function(){
+      btn.disabled = false;
+      btn.textContent = "Get AI feedback";
+    });
+}
+
+function startAiRecognition(expectedText, status, btn){
+  if (!SpeechRecognitionCtor || !CONFIG.feedbackEndpoint){
+    status.textContent = "AI feedback is unavailable in this browser.";
+    return;
+  }
+
+  stopAllPlayback();
+  stopAnyActiveRecording();
+  stopAiRecognition();
+
+  var recognition;
+  try { recognition = new SpeechRecognitionCtor(); }
+  catch(e){
+    status.textContent = "AI feedback is unavailable in this browser.";
+    return;
+  }
+
+  activeRecognition = recognition;
+  recognition.lang = "en-GB";
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  var finished = false;
+  var transcript = "";
+
+  btn.disabled = true;
+  btn.textContent = "Listening…";
+  status.textContent = "Say the phrase once.";
+
+  recognition.onresult = function(event){
+    if (event.results && event.results[0] && event.results[0][0]){
+      transcript = cleanAiText(event.results[0][0].transcript, 300);
+    }
+  };
+
+  recognition.onerror = function(){
+    if (finished) return;
+    finished = true;
+    btn.disabled = false;
+    btn.textContent = "Get AI feedback";
+    status.textContent = "No worries! I couldn't compare the words clearly this time. Listen once more and try again when you're ready.";
+    stopAiRecognition();
+  };
+
+  recognition.onend = function(){
+    if (finished) return;
+    finished = true;
+    btn.disabled = false;
+    btn.textContent = "Get AI feedback";
+
+    if (!transcript){
+      status.textContent = "No worries! I couldn't compare the words clearly this time. Listen once more and try again when you're ready.";
+      stopAiRecognition();
+      return;
+    }
+
+    stopAiRecognition();
+    requestAiFeedback(expectedText, transcript, status, btn);
+  };
+
+  recognitionTimer = setTimeout(function(){
+    try { recognition.stop(); } catch(e){}
+  }, RECOGNITION_TIMEOUT_MS);
+
+  try { recognition.start(); }
+  catch(e){
+    finished = true;
+    btn.disabled = false;
+    btn.textContent = "Get AI feedback";
+    stopAiRecognition();
+  }
+}
+
 function buildAIPanel(panelId, expectedText){
   var wrap = document.createElement("div");
   wrap.className = "pz-ai";
 
   var btn = document.createElement("button");
-  btn.type = "button"; btn.className = "pz-btn-help";
+  btn.type = "button";
+  btn.className = "pz-btn-help";
   btn.textContent = "Get AI feedback";
 
   var status = document.createElement("p");
@@ -707,58 +850,14 @@ function buildAIPanel(panelId, expectedText){
   wrap.appendChild(btn);
   wrap.appendChild(status);
 
-  if (!CONFIG.feedbackEndpoint){
+  if (!SpeechRecognitionCtor){
     btn.disabled = true;
-    status.textContent = "AI feedback is not switched on for this activity yet. Recording and listening back still work.";
+    status.textContent = "AI feedback is unavailable in this browser. Recording and listening back still work.";
     return wrap;
   }
 
-  var submitting = false;
   btn.addEventListener("click", function(){
-    if (submitting) return;
-    var st = recPanels[panelId];
-    if (!st || !st.blobUrl){
-      status.textContent = "Record your voice first, then ask for feedback.";
-      return;
-    }
-    submitting = true;
-    btn.disabled = true;
-    status.textContent = "Sending your recording for feedback...";
-
-    var controller = new AbortController();
-    var timer = setTimeout(function(){ controller.abort(); }, CONFIG.requestTimeoutMs);
-
-    fetch(st.blobUrl).then(function(r){ return r.blob(); }).then(function(blob){
-      var form = new FormData();
-      form.append("audio", blob, "recording");
-      form.append("expected", expectedText);
-      form.append("locale", "en-GB");
-      form.append("activityId", CONFIG.activityId);
-      return fetch(CONFIG.feedbackEndpoint, {
-        method: "POST", body: form, signal: controller.signal
-      });
-    }).then(function(res){
-      clearTimeout(timer);
-      if (!res.ok) throw new Error("bad status");
-      return res.json();
-    }).then(function(data){
-      if (!data || typeof data.strength !== "string" || typeof data.nextStep !== "string" ||
-          data.strength.length > 300 || data.nextStep.length > 300){
-        status.textContent = "Feedback was not in the expected format.";
-        return;
-      }
-      status.textContent = "";
-      var strong = document.createElement("span");
-      strong.textContent = data.strength + " ";
-      var next = document.createElement("span");
-      next.textContent = data.nextStep;
-      status.appendChild(strong);
-      status.appendChild(next);
-    }).catch(function(){
-      status.textContent = "Feedback is not available right now. Your recording is still saved locally.";
-    }).finally(function(){
-      submitting = false; btn.disabled = false;
-    });
+    startAiRecognition(expectedText, status, btn);
   });
 
   return wrap;
@@ -1081,6 +1180,7 @@ function updateProgress(){
 
 function goToScreen(index){
   if (index < 0 || index >= screens.length) return;
+  stopAiRecognition();
   stopAllPlayback();
   stopAnyActiveRecording();
   screens[currentIndex].hidden = true;
@@ -1255,8 +1355,8 @@ function init(){
   screens[0].hidden = false;
   screens[0].focus();
 
-  window.addEventListener("pagehide", cleanupAllRecordings);
-  window.addEventListener("beforeunload", cleanupAllRecordings);
+  window.addEventListener("pagehide", function(){ stopAiRecognition(); cleanupAllRecordings(); });
+  window.addEventListener("beforeunload", function(){ stopAiRecognition(); cleanupAllRecordings(); });
 }
 
 if (document.readyState === "loading"){
