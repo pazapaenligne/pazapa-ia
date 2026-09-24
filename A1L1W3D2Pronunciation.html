@@ -1561,6 +1561,14 @@ function buildItemScreen(index){
   for (i = 0; i < item.records.length; i++){
     spec = item.records[i];
     if (recordingSupported()) sec.appendChild(buildRecordPanel(spec));
+    if (speakingEnabled()){
+      sec.appendChild(buildSpeakPanel({
+        id:item.id + "-" + spec.id + "-ai",
+        key:spec.key,
+        target:spec.target,
+        label:spec.label
+      }));
+    }
   }
   for (i = 0; i < item.speaks.length; i++){
     spec = item.speaks[i];
