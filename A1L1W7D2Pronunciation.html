@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
@@ -156,6 +157,12 @@ button[disabled]:hover{background:#FFFFFF;}
 .pz-fallback{margin:10px 0 0;display:flex;align-items:center;gap:8px;font-size:0.95rem;}
 .pz-fallback input{width:22px;height:22px;}
 
+.pz-speak{border:2px dashed var(--pz-blue-60);border-radius:var(--pz-radius);padding:14px;margin:14px 0 0;background:var(--pz-blue-20);}
+.pz-heard{background:#FFFFFF;border:1px solid var(--pz-dark);border-radius:var(--pz-radius);padding:10px 12px;margin:12px 0 0;}
+.pz-heard-label{font-size:0.86rem;opacity:0.85;margin:0 0 4px;}
+.pz-heard-text{font-size:1.05rem;margin:0;}
+.pz-ai-status{margin:10px 0 0;font-size:0.95rem;}
+
 .pz-focusbox{background:var(--pz-blue-20);border:2px solid var(--pz-blue-60);border-radius:var(--pz-radius);padding:16px;margin:0 0 18px;}
 .pz-stressarc{display:flex;align-items:flex-end;gap:6px;flex-wrap:wrap;margin:10px 0 14px;}
 .pz-stressarc .bit{border-radius:6px;background:var(--pz-blue-60);color:var(--pz-dark);font-family:var(--pz-head-font);text-align:center;padding:6px 4px;font-size:0.95rem;}
@@ -293,6 +300,185 @@ noscript p{background:var(--pz-yellow-20);border:2px solid var(--pz-yellow);bord
 (function(){
 
 /* ============================================================================
+   AI FEEDBACK — recognised text only, never Record-and-compare audio
+   ========================================================================= */
+var AI_FEEDBACK_ENDPOINT = "https://pazapa-ia.netlify.app/.netlify/functions/pronunciation-feedback";
+var AI_REQUEST_TIMEOUT_MS = 12000;
+var RECOGNITION_TIMEOUT_MS = 12000;
+var SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+var activeRecognition = null;
+var recognitionTimer = null;
+
+function aiFeedbackAvailable(){
+  return !!SpeechRecognitionCtor && /^https:\/\//.test(AI_FEEDBACK_ENDPOINT);
+}
+
+function stopAiRecognition(){
+  if (recognitionTimer){
+    clearTimeout(recognitionTimer);
+    recognitionTimer = null;
+  }
+  if (!activeRecognition) return;
+  try{
+    activeRecognition.onresult = null;
+    activeRecognition.onerror = null;
+    activeRecognition.onend = null;
+  }catch(e){}
+  try{ activeRecognition.abort(); }catch(e){}
+  activeRecognition = null;
+}
+
+function cleanAiText(value, maxLength){
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, maxLength);
+}
+
+function requestAiFeedback(targetPhrase, recognisedText, statusEl, button){
+  statusEl.textContent = "Comparing your words with the model…";
+
+  var controller = (typeof AbortController === "function") ? new AbortController() : null;
+  var timeout = setTimeout(function(){
+    if (controller) controller.abort();
+  }, AI_REQUEST_TIMEOUT_MS);
+
+  var options = {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      targetPhrase: targetPhrase,
+      recognisedText: recognisedText
+    })
+  };
+  if (controller) options.signal = controller.signal;
+
+  fetch(AI_FEEDBACK_ENDPOINT, options)
+    .then(function(response){
+      if (!response.ok) throw new Error("feedback");
+      return response.json();
+    })
+    .then(function(data){
+      clearTimeout(timeout);
+      var state = data && data.status;
+      var message = data && typeof data.message === "string"
+        ? cleanAiText(data.message, 160) : "";
+
+      if ((state === "match" || state === "try_again" || state === "unclear") && message){
+        statusEl.textContent = message;
+      } else {
+        statusEl.textContent = "AI feedback is unavailable right now. Listen and try again, or carry on.";
+      }
+      button.disabled = false;
+      button.textContent = "Practise speaking";
+    })
+    .catch(function(){
+      clearTimeout(timeout);
+      statusEl.textContent = "AI feedback is unavailable right now. Listen and try again, or carry on.";
+      button.disabled = false;
+      button.textContent = "Practise speaking";
+    });
+}
+
+function startAiFeedback(targetPhrase, panel, button, heardText, statusEl){
+  if (!aiFeedbackAvailable()) return;
+
+  stopAudio();
+  stopActiveRecorder();
+  stopAiRecognition();
+
+  var recognition;
+  try{ recognition = new SpeechRecognitionCtor(); }
+  catch(e){ return; }
+
+  activeRecognition = recognition;
+  recognition.lang = "en-GB";
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  var finished = false;
+  var transcript = "";
+
+  button.disabled = true;
+  button.textContent = "Listening…";
+  statusEl.textContent = "Say the phrase once.";
+
+  recognition.onresult = function(event){
+    if (event.results && event.results[0] && event.results[0][0]){
+      transcript = cleanAiText(event.results[0][0].transcript, 300);
+      heardText.textContent = transcript || "—";
+    }
+  };
+
+  recognition.onerror = function(){
+    if (finished) return;
+    finished = true;
+    button.disabled = false;
+    button.textContent = "Practise speaking";
+    statusEl.textContent = "No worries! I couldn't compare the words clearly this time. Listen once more and try again when you're ready.";
+    stopAiRecognition();
+  };
+
+  recognition.onend = function(){
+    if (finished) return;
+    finished = true;
+    button.disabled = false;
+    button.textContent = "Practise speaking";
+
+    if (!transcript){
+      statusEl.textContent = "No worries! I couldn't compare the words clearly this time. Listen once more and try again when you're ready.";
+      stopAiRecognition();
+      return;
+    }
+
+    stopAiRecognition();
+    requestAiFeedback(targetPhrase, transcript, statusEl, button);
+  };
+
+  recognitionTimer = setTimeout(function(){
+    try{ recognition.stop(); }catch(e){}
+  }, RECOGNITION_TIMEOUT_MS);
+
+  try{ recognition.start(); }
+  catch(e){
+    finished = true;
+    button.disabled = false;
+    button.textContent = "Practise speaking";
+    stopAiRecognition();
+  }
+}
+
+function buildAiPanel(targetPhrase){
+  if (!aiFeedbackAvailable()) return null;
+
+  var panel = el("div", "pz-speak");
+  var privacy = el("p", "pz-privacy",
+    "AI feedback receives only the recognised words. Your Record and compare audio stays in this browser.");
+  panel.appendChild(privacy);
+
+  var row = el("div", "pz-btnrow");
+  var button = el("button", "pz-btn-help", "Practise speaking");
+  button.type = "button";
+  row.appendChild(button);
+  panel.appendChild(row);
+
+  var heard = el("div", "pz-heard");
+  heard.appendChild(el("p", "pz-heard-label", "The computer heard:"));
+  var heardText = el("p", "pz-heard-text", "—");
+  heard.appendChild(heardText);
+  panel.appendChild(heard);
+
+  var status = el("p", "pz-ai-status");
+  status.setAttribute("role", "status");
+  status.setAttribute("aria-live", "polite");
+  panel.appendChild(status);
+
+  button.addEventListener("click", function(){
+    startAiFeedback(targetPhrase, panel, button, heardText, status);
+  });
+
+  return panel;
+}
+
+/* ============================================================================
    CONTENT — taken verbatim from the supplied Week 7 Lesson 2 material.
    ========================================================================= */
 var WORDS = [
@@ -418,8 +604,8 @@ function stopActiveRecorder(){
     try{ activePanel.pzRecorder.stop(); }catch(e){}
   }
 }
-window.addEventListener("pagehide", function(){ stopActiveRecorder(); clearAllRecordings(); stopAudio(); });
-window.addEventListener("beforeunload", function(){ stopActiveRecorder(); clearAllRecordings(); stopAudio(); });
+window.addEventListener("pagehide", function(){ stopAiRecognition(); stopActiveRecorder(); clearAllRecordings(); stopAudio(); });
+window.addEventListener("beforeunload", function(){ stopAiRecognition(); stopActiveRecorder(); clearAllRecordings(); stopAudio(); });
 
 var allPanels = [];
 function clearAllRecordings(){
@@ -619,6 +805,7 @@ function buildWordCard(w){
 var screens = ["pz-s1","pz-s2","pz-s3","pz-s4","pz-s5","pz-s6"].map(function(id){ return document.getElementById(id); });
 var current = 0;
 function showScreen(i){
+  stopAiRecognition();
   stopAudio();
   stopActiveRecorder();
   screens[current].hidden = true;
@@ -697,6 +884,8 @@ function init(){
     card.appendChild(phraseEl);
     if (p.note){ card.appendChild(el("p", null, p.note)); }
     card.appendChild(buildRecordPanel(p.text, p.audioKey));
+    var aiPanel = buildAiPanel(p.text);
+    if (aiPanel) card.appendChild(aiPanel);
     phraseHost.appendChild(card);
   });
 
@@ -720,6 +909,8 @@ function init(){
       wrap.appendChild(el("p","pz-phrase",p.text));
       wrap.appendChild(listenBtn);
       wrap.appendChild(buildRecordPanel(p.text, p.audioKey));
+      var aiPanel = buildAiPanel(p.text);
+      if (aiPanel) wrap.appendChild(aiPanel);
       retryHost.appendChild(wrap);
     });
   });
