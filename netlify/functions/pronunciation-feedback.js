@@ -1,8 +1,4 @@
-const ALLOWED_STATUSES = new Set([
-  "match",
-  "try_again",
-  "unclear"
-]);
+const ALLOWED_STATUSES = new Set(["match", "try_again", "unclear"]);
 
 function corsHeaders() {
   return {
@@ -24,11 +20,7 @@ function json(statusCode, body) {
 
 function cleanText(value, maxLength) {
   if (typeof value !== "string") return "";
-
-  return value
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, maxLength);
+  return value.replace(/\s+/g, " ").trim().slice(0, maxLength);
 }
 
 function stripCodeFences(text) {
@@ -49,402 +41,179 @@ function normalizeForCheck(text) {
 
 function focusIsFromTarget(focus, targetPhrase) {
   if (!focus) return true;
-
   const f = normalizeForCheck(focus);
   const t = normalizeForCheck(targetPhrase);
-
-  if (!f || !t) return false;
-
-  return (` ${t} `).includes(` ${f} `);
+  return !!f && t.includes(f);
 }
 
-function buildSafeFeedback(data, targetPhrase) {
+function validateFeedback(data, targetPhrase) {
+  if (!data || typeof data !== "object") return null;
 
-  if (!data || typeof data !== "object") {
+  const status = cleanText(data.status, 20);
+  const message = cleanText(data.message, 160);
+  let focus = cleanText(data.focus, 60);
+
+  if (!ALLOWED_STATUSES.has(status)) return null;
+  if (!message) return null;
+
+  // Keep the learner-facing feedback plain and safe.
+  if (/[<>{}\[\]\\|`~^]|https?:|data:|javascript:/i.test(message)) return null;
+
+  if (/\d|%|\bscores?\b|\bstars?\b|\bgrades?\b|\blevels?\b|\bpoints?\b|\bmarks?\b|\bbadges?\b/i.test(message)) {
     return null;
   }
 
-  const status = cleanText(
-    data.status,
-    20
-  );
-
-  if (!ALLOWED_STATUSES.has(status)) {
-    return null;
-  }
-
-  let focus = cleanText(
-    data.focus,
-    60
-  );
-
-  /*
-    focus may only contain an exact contiguous
-    part of the target phrase.
-  */
-  if (!focusIsFromTarget(
-    focus,
-    targetPhrase
-  )) {
+  if (!focusIsFromTarget(focus, targetPhrase)) {
     focus = "";
   }
 
-  /*
-    match and unclear never need a focus.
-  */
-  if (
-    status === "match" ||
-    status === "unclear"
-  ) {
-    focus = "";
-  }
-
-  /*
-    IMPORTANT:
-    The learner-facing message is generated
-    here by the server.
-
-    We do not display arbitrary AI wording.
-  */
-
-  let message = "";
-
-  if (status === "match") {
-
-    message =
-      "Your words matched the model phrase.";
-
-  } else if (status === "try_again") {
-
-    if (focus) {
-      message =
-        `Good try. Say "${focus}" once more.`;
-    } else {
-      message =
-        "Good try. Try the phrase once more.";
-    }
-
-  } else {
-
-    message =
-      "The words were not clear enough to compare. Listen and try again, or carry on.";
-  }
-
-  return {
-    status,
-    message,
-    focus
-  };
+  return { status, message, focus };
 }
 
 exports.handler = async function (event) {
-
-  /*
-    CORS preflight
-  */
   if (event.httpMethod === "OPTIONS") {
-
     return {
       statusCode: 204,
       headers: corsHeaders(),
       body: ""
     };
-
   }
 
-  /*
-    POST only
-  */
   if (event.httpMethod !== "POST") {
-
-    return json(405, {
-      error: "Method Not Allowed"
-    });
-
+    return json(405, { error: "Method Not Allowed" });
   }
 
-  /*
-    API key must stay on Netlify only.
-  */
-  const apiKey =
-    process.env.ANTHROPIC_API_KEY;
-
-  if (!apiKey) {
-
-    console.error(
-      "ANTHROPIC_API_KEY is not configured."
-    );
-
-    return json(500, {
-      error: "AI service is not configured."
-    });
-
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return json(500, { error: "AI service is not configured." });
   }
 
   try {
-
     let body;
 
     try {
-
-      body = JSON.parse(
-        event.body || "{}"
-      );
-
+      body = JSON.parse(event.body || "{}");
     } catch {
-
-      return json(400, {
-        error: "Invalid JSON."
-      });
-
+      return json(400, { error: "Invalid JSON." });
     }
 
-    const targetPhrase = cleanText(
-      body.targetPhrase,
-      180
-    );
+    const targetPhrase = cleanText(body.targetPhrase, 180);
+    const recognisedText = cleanText(body.recognisedText, 300);
 
-    const recognisedText = cleanText(
-      body.recognisedText,
-      300
-    );
-
-    if (
-      !targetPhrase ||
-      !recognisedText
-    ) {
-
-      return json(400, {
-        error:
-          "Missing targetPhrase or recognisedText."
-      });
-
+    if (!targetPhrase || !recognisedText) {
+      return json(400, { error: "Missing targetPhrase or recognisedText." });
     }
 
-    const prompt = `
-You are a careful British-English speaking-practice assistant for adult A1-A2 learners.
-
-You are NOT listening to audio.
+    const prompt = `You are a careful British-English pronunciation practice assistant for adult A1-A2 learners.
 
 You receive:
+- TARGET PHRASE: the exact model sentence.
+- RECOGNISED TEXT: the words produced by browser speech recognition.
+
+Your job is ONLY to compare the recognised words with the target phrase.
+
+Do not judge accent, pronunciation quality, fluency, identity, ability, or level.
+Do not give a score, percentage, grade, points, stars, marks, badges, or CEFR level.
+Do not mention speech-recognition technology.
+
+Use warm, encouraging, simple British English suitable for A1-A2 learners.
+The learner-facing message must sound supportive and positive, never cold, abrupt, blaming, or discouraging.
+
+Return ONLY valid JSON with exactly these keys:
+
+{
+  "status": "match" | "try_again" | "unclear",
+  "message": "short learner-facing sentence, maximum 160 characters",
+  "focus": "a short exact contiguous part of the TARGET PHRASE, or empty string"
+}
+
+Rules:
+
+- status "match":
+  recognised words clearly match the target phrase.
+  focus must be "".
+  Use an encouraging message such as:
+  "✨ Great job! Your words matched the model phrase."
+
+- status "try_again":
+  there is a clear word or short phrase difference.
+  Encourage the learner warmly to listen and try again.
+
+- If the recognised text is a completely different word or phrase from the target:
+  DO NOT say "Say [target] once more".
+  DO NOT pretend the learner was close.
+  Use a warm message such as:
+  "🎉 Nice try! That was a different word. Listen to the model and have another go."
+  focus must be "".
+
+- If the recognised text is close to the target but one short part differs:
+  you may use focus.
+  Use a warm message such as:
+  "💫 Good effort! You're close. Listen once more and try that part again."
+
+- status "unclear":
+  the recognised text is too incomplete or unclear to compare reliably.
+  focus must be "".
+  Use a reassuring message such as:
+  "✅ No worries! I couldn't compare the words clearly this time. Listen once more and try again when you're ready."
+
+- Ignore harmless punctuation, capitalisation, and contractions/apostrophe style.
+- Never invent lesson content.
+- Never output HTML, Markdown, explanations, or extra keys.
 
 TARGET PHRASE:
 ${JSON.stringify(targetPhrase)}
 
 RECOGNISED TEXT:
-${JSON.stringify(recognisedText)}
+${JSON.stringify(recognisedText)}`;
 
-Your only task is to compare the recognised words with the target phrase.
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01"
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 220,
+        temperature: 0,
+        messages: [
+          {
+            role: "user",
+            content: prompt
+          }
+        ]
+      })
+    });
 
-Do not judge:
-- accent
-- pronunciation quality
-- fluency
-- identity
-- ability
-- learner level
-
-Do not give:
-- scores
-- percentages
-- grades
-- points
-- stars
-- marks
-- badges
-- CEFR levels
-
-Ignore harmless differences in:
-- punctuation
-- capitalisation
-- apostrophe style
-- ordinary contraction style
-
-Return ONLY valid JSON.
-
-Use exactly these keys:
-
-{
-  "status": "match",
-  "focus": ""
-}
-
-Allowed status values:
-
-"match"
-Use when the recognised words clearly correspond to the target phrase.
-
-"try_again"
-Use when there is a clear word or short phrase difference.
-focus may contain ONLY an exact contiguous sequence of words copied from TARGET PHRASE.
-
-"unclear"
-Use when the recognised text is too incomplete or unreliable to compare.
-focus must be "".
-
-Examples:
-
-{
-  "status": "match",
-  "focus": ""
-}
-
-{
-  "status": "try_again",
-  "focus": "at seven"
-}
-
-{
-  "status": "unclear",
-  "focus": ""
-}
-
-Never output:
-- a message field
-- HTML
-- Markdown
-- explanations
-- comments
-- extra keys
-
-Return JSON only.
-`;
-
-    const response = await fetch(
-      "https://api.anthropic.com/v1/messages",
-      {
-        method: "POST",
-
-        headers: {
-          "Content-Type":
-            "application/json",
-
-          "x-api-key":
-            apiKey,
-
-          "anthropic-version":
-            "2023-06-01"
-        },
-
-        body: JSON.stringify({
-          model:
-            "claude-haiku-4-5-20251001",
-
-          max_tokens: 120,
-
-          temperature: 0,
-
-          messages: [
-            {
-              role: "user",
-              content: prompt
-            }
-          ]
-        })
-      }
-    );
-
-    let data;
-
-    try {
-
-      data =
-        await response.json();
-
-    } catch {
-
-      console.error(
-        "Anthropic returned invalid JSON."
-      );
-
-      return json(502, {
-        error:
-          "AI service unavailable."
-      });
-
-    }
+    const data = await response.json();
 
     if (!response.ok) {
-
-      console.error(
-        "Anthropic error:",
-        response.status,
-        data
-      );
-
-      return json(502, {
-        error:
-          "AI service unavailable."
-      });
-
+      console.error("Anthropic error:", response.status, data);
+      return json(502, { error: "AI service unavailable." });
     }
 
-    const raw =
-      data &&
-      data.content &&
-      data.content[0] &&
-      typeof data.content[0].text === "string"
-        ? data.content[0].text
-        : "";
-
+    const raw = data?.content?.[0]?.text || "";
     let parsed;
 
     try {
-
-      parsed = JSON.parse(
-        stripCodeFences(raw)
-      );
-
+      parsed = JSON.parse(stripCodeFences(raw));
     } catch {
-
-      console.error(
-        "Invalid AI JSON:",
-        raw
-      );
-
-      return json(502, {
-        error:
-          "Invalid AI response."
-      });
-
+      console.error("Invalid AI JSON:", raw);
+      return json(502, { error: "Invalid AI response." });
     }
 
-    const safe =
-      buildSafeFeedback(
-        parsed,
-        targetPhrase
-      );
+    const safe = validateFeedback(parsed, targetPhrase);
 
     if (!safe) {
-
-      console.error(
-        "Rejected AI response:",
-        parsed
-      );
-
-      return json(502, {
-        error:
-          "Unsafe or invalid AI response."
-      });
-
+      console.error("Rejected AI response:", parsed);
+      return json(502, { error: "Unsafe or invalid AI response." });
     }
 
-    return json(
-      200,
-      safe
-    );
+    return json(200, safe);
 
   } catch (error) {
-
-    console.error(
-      "pronunciation-feedback error:",
-      error
-    );
-
-    return json(500, {
-      error: "Server error."
-    });
-
+    console.error("Server error:", error);
+    return json(500, { error: "Server error." });
   }
-
 };
