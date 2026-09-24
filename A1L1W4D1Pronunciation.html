@@ -478,7 +478,7 @@ button[disabled]:hover{background:#FFFFFF;}
    CONFIG — administrator-controlled values. Both are empty placeholders.
    ========================================================================= */
 var CONFIG = {
-  feedbackEndpoint: "",      /* empty: AI feedback panel stays hidden */
+  feedbackEndpoint: "https://pazapa-ia.netlify.app/.netlify/functions/pronunciation-feedback",      /* secure AI feedback endpoint */
   requestTimeoutMs: 12000,
   activityId: "A1_W04D1_STEP3_PRONUNCIATION_CLINIC",
   nextActivityUrl: ""        /* empty: no next-activity link is shown */
@@ -838,6 +838,138 @@ function buildRecordPanel(key, kind, audioKey, listenLabel){
 }
 
 /* ============================================================================
+   OPTIONAL AI FEEDBACK — recognised text only, never recorded audio
+   ========================================================================= */
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+var recognition = null;
+var recognitionTimer = null;
+var RECOGNITION_TIMEOUT_MS = 12000;
+
+function aiFeedbackAvailable(){
+  return !!SR && /^https:\/\//.test(CONFIG.feedbackEndpoint || "");
+}
+function stopRecognition(){
+  if (recognitionTimer){ clearTimeout(recognitionTimer); recognitionTimer = null; }
+  if (!recognition) return;
+  try { recognition.onresult = null; recognition.onerror = null; recognition.onend = null; } catch(e){}
+  try { recognition.abort(); } catch(e){}
+  recognition = null;
+}
+function safeAiText(value, max){
+  return String(value || "").replace(/\s+/g," ").trim().slice(0,max);
+}
+function renderAiFeedback(out, data){
+  out.innerHTML = "";
+  if (!data || typeof data !== "object") return;
+  var status = data.status;
+  if (status !== "match" && status !== "try_again" && status !== "unclear") return;
+  var message = safeAiText(data.message,160);
+  if (!message) return;
+  var box = document.createElement("p");
+  box.className = "pz-fb" + (status === "match" ? " pz-fb-ok" : "");
+  box.textContent = message;
+  out.appendChild(box);
+}
+function requestAiFeedback(target, recognised, out){
+  out.textContent = "Comparing your words with the model…";
+  var controller = (typeof AbortController === "function") ? new AbortController() : null;
+  var timer = setTimeout(function(){ if (controller) controller.abort(); }, CONFIG.requestTimeoutMs);
+  var opts = {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ targetPhrase:target, recognisedText:recognised })
+  };
+  if (controller) opts.signal = controller.signal;
+  fetch(CONFIG.feedbackEndpoint, opts)
+    .then(function(r){ if (!r.ok) throw new Error("bad-status"); return r.json(); })
+    .then(function(data){ clearTimeout(timer); renderAiFeedback(out, data); })
+    .catch(function(){
+      clearTimeout(timer);
+      out.textContent = "AI feedback is unavailable right now. You can listen and try again, or carry on.";
+    });
+}
+function startAiPractice(target, out, btn){
+  if (!aiFeedbackAvailable()) return;
+  stopPlayback();
+  stopActiveRecorder();
+  stopRecognition();
+
+  var r;
+  try { r = new SR(); } catch(e){ return; }
+  recognition = r;
+  r.lang = "en-GB";
+  r.continuous = false;
+  r.interimResults = false;
+  r.maxAlternatives = 1;
+
+  var settled = false;
+  var heard = "";
+  btn.disabled = true;
+  btn.textContent = "Listening…";
+  out.textContent = "Say the sentence once.";
+
+  r.onresult = function(ev){
+    if (ev.results && ev.results[0] && ev.results[0][0]){
+      heard = safeAiText(ev.results[0][0].transcript, 300);
+    }
+  };
+  r.onerror = function(){
+    if (settled) return;
+    settled = true;
+    btn.disabled = false;
+    btn.textContent = "Practise speaking";
+    out.textContent = "No worries! I couldn't compare the words clearly this time. Listen once more and try again when you're ready.";
+    stopRecognition();
+  };
+  r.onend = function(){
+    if (settled) return;
+    settled = true;
+    btn.disabled = false;
+    btn.textContent = "Practise speaking";
+    if (!heard){
+      out.textContent = "No worries! I couldn't compare the words clearly this time. Listen once more and try again when you're ready.";
+      stopRecognition();
+      return;
+    }
+    stopRecognition();
+    requestAiFeedback(target, heard, out);
+  };
+
+  recognitionTimer = setTimeout(function(){
+    try { r.stop(); } catch(e){}
+  }, RECOGNITION_TIMEOUT_MS);
+
+  try { r.start(); }
+  catch(e){
+    settled = true;
+    btn.disabled = false;
+    btn.textContent = "Practise speaking";
+    stopRecognition();
+  }
+}
+function buildAiFeedbackPanel(target){
+  var wrap = document.createElement("div");
+  var row = document.createElement("div");
+  row.className = "pz-btnrow";
+
+  var btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "pz-btn-primary";
+  btn.textContent = "Practise speaking";
+
+  var out = document.createElement("div");
+  out.setAttribute("role","status");
+  out.setAttribute("aria-live","polite");
+  out.className = "pz-status";
+
+  btn.addEventListener("click", function(){ startAiPractice(target, out, btn); });
+  row.appendChild(btn);
+  wrap.appendChild(row);
+  wrap.appendChild(out);
+  return wrap;
+}
+
+/* ============================================================================
    BUILD SCREEN 2 — word cards
    ========================================================================= */
 function buildWordCards(){
@@ -915,10 +1047,11 @@ function buildPhrasePractice(){
     card.appendChild(buildRecordPanel(p.key, "phrase", p.key, p.plain));
 
     var aiNote = document.createElement("p"); aiNote.className = "pz-note";
-    aiNote.textContent = CONFIG.feedbackEndpoint ?
+    aiNote.textContent = aiFeedbackAvailable() ?
       "Optional AI feedback is available for this sentence." :
-      "AI feedback is not switched on for this activity. Recording and listening back still work.";
+      "AI feedback is not available in this browser. Recording and listening back still work.";
     card.appendChild(aiNote);
+    if (aiFeedbackAvailable()) card.appendChild(buildAiFeedbackPanel(p.plain));
 
     host.appendChild(card);
   });
