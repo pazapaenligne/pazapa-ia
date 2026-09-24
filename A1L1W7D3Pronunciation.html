@@ -282,10 +282,153 @@ button[disabled]:hover{background:#FFFFFF;}
    rather than fabricated.
    ========================================================================= */
 var CONFIG = {
-  feedbackEndpoint: "",
+  feedbackEndpoint: "https://pazapa-ia.netlify.app/.netlify/functions/pronunciation-feedback",
   requestTimeoutMs: 12000,
   activityId: "A1_W07D3_STEP3_PRONUNCIATION_CLINIC"
 };
+
+var SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+var activeRecognition = null;
+var recognitionTimer = null;
+var RECOGNITION_TIMEOUT_MS = 12000;
+
+function stopAiRecognition(){
+  if (recognitionTimer){
+    clearTimeout(recognitionTimer);
+    recognitionTimer = null;
+  }
+  if (!activeRecognition) return;
+  try{
+    activeRecognition.onresult = null;
+    activeRecognition.onerror = null;
+    activeRecognition.onend = null;
+  }catch(e){}
+  try{ activeRecognition.abort(); }catch(e){}
+  activeRecognition = null;
+}
+
+function cleanAiText(value, maxLength){
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, maxLength);
+}
+
+function requestAiFeedback(targetPhrase, recognisedText, note, button){
+  note.textContent = "Comparing your words with the model…";
+
+  var controller = (typeof AbortController === "function") ? new AbortController() : null;
+  var timeout = setTimeout(function(){
+    if (controller) controller.abort();
+  }, CONFIG.requestTimeoutMs);
+
+  var options = {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      targetPhrase: targetPhrase,
+      recognisedText: recognisedText
+    })
+  };
+  if (controller) options.signal = controller.signal;
+
+  fetch(CONFIG.feedbackEndpoint, options)
+    .then(function(response){
+      if (!response.ok) throw new Error("feedback");
+      return response.json();
+    })
+    .then(function(data){
+      clearTimeout(timeout);
+      var state = data && data.status;
+      var message = data && typeof data.message === "string"
+        ? cleanAiText(data.message, 160) : "";
+
+      if ((state === "match" || state === "try_again" || state === "unclear") && message){
+        note.textContent = message;
+      } else {
+        note.textContent = "AI feedback is unavailable right now. Listen and try again, or carry on.";
+      }
+      button.disabled = false;
+      button.textContent = "Get AI feedback";
+    })
+    .catch(function(){
+      clearTimeout(timeout);
+      note.textContent = "AI feedback is unavailable right now. Listen and try again, or carry on.";
+      button.disabled = false;
+      button.textContent = "Get AI feedback";
+    });
+}
+
+function startAiFeedback(targetPhrase, note, button){
+  if (!SpeechRecognitionCtor || !CONFIG.feedbackEndpoint){
+    note.textContent = "AI feedback is unavailable in this browser.";
+    return;
+  }
+
+  stopAudio();
+  stopActiveRecorder();
+  stopAiRecognition();
+
+  var recognition;
+  try{ recognition = new SpeechRecognitionCtor(); }
+  catch(e){
+    note.textContent = "AI feedback is unavailable in this browser.";
+    return;
+  }
+
+  activeRecognition = recognition;
+  recognition.lang = "en-GB";
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  var finished = false;
+  var transcript = "";
+
+  button.disabled = true;
+  button.textContent = "Listening…";
+  note.textContent = "Say the phrase once.";
+
+  recognition.onresult = function(event){
+    if (event.results && event.results[0] && event.results[0][0]){
+      transcript = cleanAiText(event.results[0][0].transcript, 300);
+    }
+  };
+
+  recognition.onerror = function(){
+    if (finished) return;
+    finished = true;
+    button.disabled = false;
+    button.textContent = "Get AI feedback";
+    note.textContent = "No worries! I couldn't compare the words clearly this time. Listen once more and try again when you're ready.";
+    stopAiRecognition();
+  };
+
+  recognition.onend = function(){
+    if (finished) return;
+    finished = true;
+    button.disabled = false;
+    button.textContent = "Get AI feedback";
+
+    if (!transcript){
+      note.textContent = "No worries! I couldn't compare the words clearly this time. Listen once more and try again when you're ready.";
+      stopAiRecognition();
+      return;
+    }
+
+    stopAiRecognition();
+    requestAiFeedback(targetPhrase, transcript, note, button);
+  };
+
+  recognitionTimer = setTimeout(function(){
+    try{ recognition.stop(); }catch(e){}
+  }, RECOGNITION_TIMEOUT_MS);
+
+  try{ recognition.start(); }
+  catch(e){
+    finished = true;
+    button.disabled = false;
+    button.textContent = "Get AI feedback";
+    stopAiRecognition();
+  }
+}
 
 /* ============================================================================
    IMAGES — extracted from the supplied workbook PDF and brand guidelines PDF.
@@ -577,7 +720,7 @@ function buildRecordPanel(targetKey, targetLabel, withAI){
     aiWrap.appendChild(aiRow);
     wrap.appendChild(aiWrap);
     aiBtn.addEventListener("click", function(){
-      aiNote.textContent = "Feedback unavailable right now. Your recording is still saved above.";
+      startAiFeedback(targetLabel, aiNote, aiBtn);
     });
   }
 
@@ -603,6 +746,7 @@ function showScreen(i){
   /* Any active recording or playback is stopped on every screen change,
      so nothing keeps running (or keeps the microphone open) once the
      learner has moved on. */
+  stopAiRecognition();
   stopActiveRecorder();
   stopAudio();
   screens[current].hidden = true;
@@ -714,8 +858,8 @@ document.getElementById("pz-done").addEventListener("click", function(){
 });
 showScreen(0);
 
-window.addEventListener("pagehide", function(){ stopActiveRecorder(); stopAudio(); });
-window.addEventListener("beforeunload", function(){ stopActiveRecorder(); stopAudio(); });
+window.addEventListener("pagehide", function(){ stopAiRecognition(); stopActiveRecorder(); stopAudio(); });
+window.addEventListener("beforeunload", function(){ stopAiRecognition(); stopActiveRecorder(); stopAudio(); });
 
 })();
 </script>
