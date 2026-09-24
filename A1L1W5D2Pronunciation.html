@@ -174,6 +174,26 @@ button[disabled]:hover{background:#FFFFFF;}
 }
 .pz-rec-status{margin:10px 0 0;font-size:0.92rem;}
 
+.pz-speak{
+  border:2px dashed var(--pz-blue-60);border-radius:var(--pz-radius);
+  padding:12px;margin:12px 0 0;background:var(--pz-blue-20);
+}
+.pz-privacy{
+  font-size:0.9rem;margin:0 0 12px;background:#FFFFFF;
+  border-left:6px solid var(--pz-yellow);border-radius:var(--pz-radius);
+  padding:10px 12px;
+}
+.pz-heard{
+  background:#FFFFFF;border:1px solid var(--pz-dark);
+  border-radius:var(--pz-radius);padding:10px 12px;margin:12px 0 0;
+}
+.pz-heard-label{font-size:0.86rem;opacity:0.85;margin:0 0 4px;}
+.pz-heard-text{font-size:1.05rem;margin:0;}
+.pz-fb{border-radius:var(--pz-radius);padding:12px 14px;margin:12px 0 0;border:2px solid var(--pz-dark);}
+.pz-fb-match{background:var(--pz-lime-20);border-color:var(--pz-lime);}
+.pz-fb-try{background:var(--pz-yellow-20);border-color:var(--pz-yellow);}
+.pz-fb-unclear{background:var(--pz-grey);border-color:var(--pz-dark);}
+
 .pz-intonation{
   border:2px solid var(--pz-blue-40);border-radius:var(--pz-radius);
   padding:14px;margin:0 0 14px;background:var(--pz-blue-20);
@@ -302,7 +322,7 @@ button[disabled]:hover{background:#FFFFFF;}
    these in later without touching any other code in this file.
    ========================================================================= */
 var CONFIG = {
-  feedbackEndpoint: "",     // empty: Get AI feedback is never rendered
+  feedbackEndpoint: "https://pazapa-ia.netlify.app/.netlify/functions/pronunciation-feedback",     // secure AI feedback endpoint
   requestTimeoutMs: 12000,
   activityId: "A1_W05D2_STEP3_PRONUNCIATION_CLINIC",
   nextActivityUrl: "",      // set by the programme team when Step 4 exists
@@ -618,6 +638,204 @@ function cleanupHost(host){
 }
 
 /* ============================================================================
+   OPTIONAL AI SPEAKING FEEDBACK — recognised text only, never recorded audio
+   ========================================================================= */
+var SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+var activeRecognition = null;
+var recognitionTimer = null;
+var RECOGNITION_TIMEOUT_MS = 12000;
+
+function aiFeedbackAvailable(){
+  return !!SpeechRecognitionCtor && /^https:\/\//.test(CONFIG.feedbackEndpoint || "");
+}
+function stopActiveRecognition(){
+  if (recognitionTimer){
+    clearTimeout(recognitionTimer);
+    recognitionTimer = null;
+  }
+  if (!activeRecognition) return;
+  try {
+    activeRecognition.onresult = null;
+    activeRecognition.onerror = null;
+    activeRecognition.onend = null;
+  } catch(e){}
+  try { activeRecognition.abort(); } catch(e){}
+  activeRecognition = null;
+}
+function cleanAiText(value, maxLength){
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, maxLength);
+}
+function renderAiFeedback(host, data){
+  var old = host.querySelector(".pz-fb");
+  if (old) old.remove();
+
+  if (!data || typeof data !== "object") return;
+  if (data.status !== "match" && data.status !== "try_again" && data.status !== "unclear") return;
+
+  var message = cleanAiText(data.message, 160);
+  if (!message) return;
+
+  var box = document.createElement("div");
+  box.className = "pz-fb " +
+    (data.status === "match" ? "pz-fb-match" :
+     data.status === "try_again" ? "pz-fb-try" : "pz-fb-unclear");
+
+  var msg = document.createElement("p");
+  msg.style.margin = "0";
+  msg.textContent = message;
+  box.appendChild(msg);
+  host.appendChild(box);
+}
+function requestAiFeedback(targetPhrase, recognisedText, host, status){
+  status.textContent = "Comparing your words with the model…";
+
+  var controller = (typeof AbortController === "function") ? new AbortController() : null;
+  var timeout = setTimeout(function(){
+    if (controller) controller.abort();
+  }, CONFIG.requestTimeoutMs);
+
+  var opts = {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      targetPhrase: targetPhrase,
+      recognisedText: recognisedText
+    })
+  };
+  if (controller) opts.signal = controller.signal;
+
+  fetch(CONFIG.feedbackEndpoint, opts)
+    .then(function(response){
+      if (!response.ok) throw new Error("feedback");
+      return response.json();
+    })
+    .then(function(data){
+      clearTimeout(timeout);
+      status.textContent = "";
+      renderAiFeedback(host, data);
+    })
+    .catch(function(){
+      clearTimeout(timeout);
+      status.textContent = "AI feedback is unavailable right now. Listen and try again, or carry on.";
+    });
+}
+function startAiRecognition(targetPhrase, panel, button, heardText, status){
+  stopAudio();
+  stopActiveRecording();
+  stopActiveRecognition();
+
+  var recognition;
+  try { recognition = new SpeechRecognitionCtor(); }
+  catch(e){ return; }
+
+  activeRecognition = recognition;
+  recognition.lang = "en-GB";
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  var finished = false;
+  var transcript = "";
+
+  button.disabled = true;
+  button.textContent = "Listening…";
+  status.textContent = "Say the phrase once.";
+
+  recognition.onresult = function(event){
+    if (event.results && event.results[0] && event.results[0][0]){
+      transcript = cleanAiText(event.results[0][0].transcript, 300);
+      heardText.textContent = transcript;
+    }
+  };
+
+  recognition.onerror = function(){
+    if (finished) return;
+    finished = true;
+    button.disabled = false;
+    button.textContent = "Practise speaking";
+    status.textContent = "No worries! I couldn't compare the words clearly this time. Listen once more and try again when you're ready.";
+    stopActiveRecognition();
+  };
+
+  recognition.onend = function(){
+    if (finished) return;
+    finished = true;
+    button.disabled = false;
+    button.textContent = "Practise speaking";
+
+    if (!transcript){
+      status.textContent = "No worries! I couldn't compare the words clearly this time. Listen once more and try again when you're ready.";
+      stopActiveRecognition();
+      return;
+    }
+
+    stopActiveRecognition();
+    requestAiFeedback(targetPhrase, transcript, panel, status);
+  };
+
+  recognitionTimer = setTimeout(function(){
+    try { recognition.stop(); } catch(e){}
+  }, RECOGNITION_TIMEOUT_MS);
+
+  try { recognition.start(); }
+  catch(e){
+    finished = true;
+    button.disabled = false;
+    button.textContent = "Practise speaking";
+    stopActiveRecognition();
+  }
+}
+function buildAiPanel(targetPhrase, host){
+  if (!aiFeedbackAvailable()) return;
+
+  var panel = document.createElement("div");
+  panel.className = "pz-speak";
+
+  var title = document.createElement("h3");
+  title.textContent = "Practise speaking";
+  panel.appendChild(title);
+
+  var privacy = document.createElement("p");
+  privacy.className = "pz-privacy";
+  privacy.textContent = "AI feedback receives only the recognised words. Your Record and compare audio stays in this browser.";
+  panel.appendChild(privacy);
+
+  var row = document.createElement("div");
+  row.className = "pz-btnrow";
+
+  var button = document.createElement("button");
+  button.type = "button";
+  button.className = "pz-btn-primary";
+  button.textContent = "Practise speaking";
+  row.appendChild(button);
+  panel.appendChild(row);
+
+  var heard = document.createElement("div");
+  heard.className = "pz-heard";
+  var heardLabel = document.createElement("p");
+  heardLabel.className = "pz-heard-label";
+  heardLabel.textContent = "The computer heard:";
+  var heardText = document.createElement("p");
+  heardText.className = "pz-heard-text";
+  heardText.textContent = "—";
+  heard.appendChild(heardLabel);
+  heard.appendChild(heardText);
+  panel.appendChild(heard);
+
+  var status = document.createElement("p");
+  status.className = "pz-rec-status";
+  status.setAttribute("role", "status");
+  status.setAttribute("aria-live", "polite");
+  panel.appendChild(status);
+
+  button.addEventListener("click", function(){
+    startAiRecognition(targetPhrase, panel, button, heardText, status);
+  });
+
+  host.appendChild(panel);
+}
+
+/* ============================================================================
    SCREEN 1 — word cards (final-sound focus, no forced Record here; that
    lives on Screen 3 so the screen sequence genuinely differs by function).
    ========================================================================= */
@@ -790,6 +1008,7 @@ function buildPhraseHost(){
     }
 
     buildRecordPanel("phrase-" + p.id, card, p.text);
+    buildAiPanel(p.text, card);
     host.appendChild(card);
   });
 }
@@ -846,6 +1065,7 @@ function selectRetry(p, wrap){
     card.appendChild(listenRow);
   }
   buildRecordPanel("retry-" + p.id, card, p.text);
+  buildAiPanel(p.text, card);
   host.appendChild(card);
 }
 
@@ -856,6 +1076,7 @@ var screens = ["pz-s1", "pz-s2", "pz-s3", "pz-s4", "pz-s5", "pz-s6"];
 var current = 0;
 
 function showScreen(i){
+  stopActiveRecognition();
   stopActiveRecording();
   cleanupHost($("pz-word-practice-host"));
   cleanupHost($("pz-phrase-host"));
@@ -977,11 +1198,13 @@ function init(){
 
   window.addEventListener("pagehide", function(){
     stopAudio();
+    stopActiveRecognition();
     stopActiveRecording();
     stopActiveStream();
   });
   window.addEventListener("beforeunload", function(){
     stopAudio();
+    stopActiveRecognition();
     stopActiveStream();
   });
 
@@ -997,3 +1220,5 @@ if (document.readyState === "loading"){
 </script>
 </body>
 </html>
+
+
