@@ -913,7 +913,7 @@ function boardRow(p){
   var status = el("p","pz-status");
   status.setAttribute("role","status"); status.setAttribute("aria-live","polite");
   var idxs = []; for (var i = 0; i < p.parts.length; i++) idxs.push(i);
-  idxs = shuffle(idxs);
+  /* syllables stay in reading order (al · ler · gic); only the word rows are shuffled */
   var solved = false;
   idxs.forEach(function(i){
     var b = el("button","pz-chip",p.parts[i]);
